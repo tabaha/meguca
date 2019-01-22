@@ -5,16 +5,14 @@ using System.Threading.Tasks;
 using Discord.WebSocket;
 using Discord;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace meguca
-{
-  class Program
-  {
+namespace meguca {
+  class Program {
 
     private DiscordSocketClient Client;
     private string _BotToken;
-    static void Main(string[] args)
-    {
+    static void Main(string[] args) {
 
       IRCSettings ircSettings = IRCSettings.Load("irc.json");
       IRCClient ircClient = new IRCClient(ircSettings);
@@ -23,9 +21,8 @@ namespace meguca
       var ircRun = new Task(ircClient.Run);
       ircRun.Start();
 
-      var discordRun = new Task(async () =>
-      {
-        await DiscordStart(discordSettings);
+      var discordRun = new Task(async () => {
+        await DiscordStart(discordSettings, ircClient);
       });
       discordRun.Start();
       var tasks = new List<Task>();
@@ -35,15 +32,27 @@ namespace meguca
     }
 
 
-    public static async Task DiscordStart(DiscordSettings settings)
-    {
+    public static async Task DiscordStart(DiscordSettings settings, IRCClient ircClient) {
       var client = new DiscordSocketClient();
 
-      client.MessageReceived += async (messageParams) =>
-      {
+      client.MessageReceived += async (messageParams) => {
         var message = messageParams;
         if (message == null) return;
         Console.WriteLine("Discord::" + message.Content);
+      };
+
+      client.MessageReceived += async (messageParams) => {
+        var message = messageParams;
+        if (!string.IsNullOrWhiteSpace(message.Content)) {
+          if (message.Content.StartsWith("!pixiv")) {
+            var res = await message.Channel.SendFileAsync(@"C:\pictures\wallpapers\72727155_p0 - 0117.jpg");
+            if(res != null) {
+              foreach(var image in res.Attachments.Select(attach => attach.Url)) {
+                await ircClient.SendAsync($"PRIVMSG #onioniichan :{image}");
+              }
+            }
+          }
+        }
       };
       await client.LoginAsync(TokenType.Bot, settings.Token);
       await client.StartAsync();

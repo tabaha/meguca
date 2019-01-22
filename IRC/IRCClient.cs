@@ -26,9 +26,15 @@ namespace meguca.IRC
       };
       ReadLine += async (sender, args) =>
       {
-        if (args.Tokens[1].Equals("251"))
+        if (args.Tokens[1].Equals("251")) {
+          if (!string.IsNullOrWhiteSpace(Settings.NickservPassword))
+            await SendAsync($"PRIVMSG NickServ :Identify {Settings.NickservPassword}");
+          System.Threading.Thread.Sleep(1000);
           foreach (string channel in Settings.AutoJoinChannels)
             await SendAsync($"JOIN {channel}");
+
+        }
+
       };
       ReadLine += (sender, args) =>
       {
