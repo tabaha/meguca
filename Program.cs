@@ -23,6 +23,14 @@ namespace meguca {
       var ircRun = new Task(ircClient.Run);
       ircRun.Start();
 
+      discordClient.Client.MessageReceived += async (msgArgs) => {
+        if(msgArgs.Channel.Id == 0000/*channel id*/) {
+          foreach(var attach in msgArgs.Attachments) {
+            await ircClient.SendAsync($"PRIVMSG #onioniichan :{attach.Url}");
+          }
+        }
+      };
+
       var discordRun = new Task( async () => await discordClient.Run());
       discordRun.Start();
       var tasks = new List<Task>();
