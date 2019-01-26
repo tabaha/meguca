@@ -24,7 +24,7 @@ namespace meguca {
       ircRun.Start();
 
       discordClient.Client.MessageReceived += async (msgArgs) => {
-        if(msgArgs.Channel.Id == 0000/*channel id*/) {
+        if(msgArgs.Channel.Id == 337692280267997196) {
           foreach(var attach in msgArgs.Attachments) {
             await ircClient.SendAsync($"PRIVMSG #onioniichan :{attach.Url}");
           }
