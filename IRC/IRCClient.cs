@@ -78,6 +78,10 @@ namespace meguca.IRC {
       OnWriteLine(new IRCEventArgs() { Time = DateTime.Now, Line = text });
     }
 
+    public async Task SendToChannelAsync(string channel, string text) {
+      await SendAsync($"PRIVMSG {channel} :{text}");
+    }
+
     public virtual void OnReadLine(IRCEventArgs args) {
       ReadLine?.Invoke(this, args);
     }
