@@ -6,6 +6,8 @@ using Discord.WebSocket;
 using Discord;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace meguca {
   class Program {
@@ -13,6 +15,10 @@ namespace meguca {
     private DiscordSocketClient Client;
     private string _BotToken;
     static void Main(string[] args) {
+
+      Pixiv.Downloader downloader = new Pixiv.Downloader("pixiv.json");
+      downloader.GetWork(72897816);
+      return;
 
       IRCSettings ircSettings = IRCSettings.Load("irc.json");
       IRCClient ircClient = new IRCClient(ircSettings);
