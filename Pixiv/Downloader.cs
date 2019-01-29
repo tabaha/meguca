@@ -43,6 +43,10 @@ namespace meguca.Pixiv {
         return;
 
       var page = GetPage(url, @"https://pixiv.net");
+      var startJson = page.IndexOf("({token:");
+      var endJson = page.IndexOf("});", startJson);
+      page = page.Substring(startJson + 1, endJson - startJson);
+      Object jsonObj = JsonConvert.DeserializeObject(page);
       var workTypeMatch = Utils.WorkTypeRegex.Match(page);
       if(workTypeMatch.Success) {
         switch (workTypeMatch.Groups["type"].Value) {
@@ -54,7 +58,10 @@ namespace meguca.Pixiv {
       }
       else {
         var singeWorkMatch = Utils.SingleWorkLocationRegex.Match(page);
-        if(singeWorkMatch.Success && singeWorkMatch.Groups["extension"].Success) {
+        using (StreamWriter w = new StreamWriter("test.html")) {
+          w.Write(page);
+        }
+        if (singeWorkMatch.Success && singeWorkMatch.Groups["extension"].Success) {
           DownloadFile(singeWorkMatch.Value, url, $"{id}_p0.{singeWorkMatch.Groups["extension"].Value}");
         }
       }

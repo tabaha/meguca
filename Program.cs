@@ -17,8 +17,9 @@ namespace meguca {
     static void Main(string[] args) {
 
       Pixiv.Downloader downloader = new Pixiv.Downloader("pixiv.json");
-      downloader.GetWork(72897816);
-      return;
+
+
+      //return;
 
       IRCSettings ircSettings = IRCSettings.Load("irc.json");
       IRCClient ircClient = new IRCClient(ircSettings);
