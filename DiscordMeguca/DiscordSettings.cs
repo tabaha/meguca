@@ -3,7 +3,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace meguca.Discord {
+namespace meguca.DiscordMeguca {
   class DiscordSettings {
     public string Token { get; set; }
 

@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using meguca.DiscordMeguca;
+using Discord;
+using System.Linq;
 
 namespace meguca.IRC {
   class IRCClient {
@@ -13,6 +16,7 @@ namespace meguca.IRC {
     public IRCSettings Settings { get; private set; }
     public event EventHandler<IRCEventArgs> ReadLine;
     public event EventHandler<IRCEventArgs> WriteLine;
+    public DiscordClient DiscordClient;
 
     public IRCClient(IRCSettings settings) {
       Settings = settings;
@@ -29,13 +33,39 @@ namespace meguca.IRC {
             await SendAsync($"JOIN {channel}");
 
         }
-
       };
+      
       ReadLine += (sender, args) => {
         Console.WriteLine(args.Line);
       };
       WriteLine += (sender, args) => {
         Console.WriteLine(args.Line);
+      };
+    }
+
+    public void Setup() {
+      ReadLine += async (sender, args) => {
+        if (args.Tokens[1] == "PRIVMSG" && args.Tokens[2] == "#onioniichan") {
+          var msgToken = args.Tokens[3];
+          if (msgToken.StartsWith(":"))
+            msgToken = msgToken.Substring(1);
+          if (msgToken.StartsWith(Pixiv.Utils.WorkPageURL)) {
+            try {
+              Pixiv.Downloader down = new Pixiv.Downloader("pixiv.json");
+              long id = Pixiv.Utils.GetID(msgToken);
+              var channel = DiscordClient.Client.GetChannel(337692280267997196) as IMessageChannel;
+              foreach (var result in down.GetWork(msgToken)) {
+                var response = await channel.SendFileAsync(result.Value, result.Key);
+                foreach (var attach in response.Attachments.Select(a => a.Url))
+                  await SendToChannelAsync("#onioniichan", attach);
+                result.Value.Dispose();
+              }
+            }
+            catch {
+              await SendToChannelAsync("#onioniichan", "Error fetching the image");
+            }
+          }
+        }
       };
     }
 

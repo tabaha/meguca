@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using Newtonsoft.Json;
 using System.Net;
+using meguca.Pixiv.Model;
 
 namespace meguca.Pixiv {
   class Downloader {
@@ -30,23 +31,37 @@ namespace meguca.Pixiv {
     }
 
 
-    public void GetWork(string url) {
-      GetWork(url, Utils.GetID(url));
+    public Dictionary<string, MemoryStream> GetWork(string url) {
+      return GetWork(url, Utils.GetID(url));
     }
 
-    public void GetWork(long id) {
-      GetWork(Utils.GetWorkURL(id));
+    public Dictionary<string, MemoryStream> GetWork(long id) {
+      return GetWork(Utils.GetWorkURL(id));
     }
 
-    private void GetWork(string url, long id) {
+    private Dictionary<string, MemoryStream> GetWork(string url, long id) {
       if (id <= 0)
-        return;
+        return new Dictionary<string, MemoryStream>();
 
       var page = GetPage(url, @"https://pixiv.net");
       var startJson = page.IndexOf("({token:");
       var endJson = page.IndexOf("});", startJson);
       page = page.Substring(startJson + 1, endJson - startJson);
-      Object jsonObj = JsonConvert.DeserializeObject(page);
+      var jsonObj = JsonConvert.DeserializeObject<Page>(page);
+
+      if(jsonObj.Preload.Illustration[id].PageCount == 1) {
+        var imageUrl = jsonObj.Preload.Illustration[id].Urls.Original;
+        if(!string.IsNullOrWhiteSpace(imageUrl)) {
+          var dic = new Dictionary<string, MemoryStream>();
+          dic.Add(Path.GetFileName(imageUrl), DownloadToMemory(imageUrl, url));
+          return dic;
+        }
+      }
+
+
+      return new Dictionary<string, MemoryStream>();
+
+
       var workTypeMatch = Utils.WorkTypeRegex.Match(page);
       if(workTypeMatch.Success) {
         switch (workTypeMatch.Groups["type"].Value) {
@@ -97,5 +112,14 @@ namespace meguca.Pixiv {
       }
     }
 
+    private MemoryStream DownloadToMemory(string url, string referer) {
+      var webRequest = CreatePixivWebRequest(url, referer);
+      MemoryStream ms = new MemoryStream();
+      using (var imageResponse = webRequest.GetResponse()) {
+        imageResponse.GetResponseStream().CopyTo(ms);
+      }
+      ms.Position = 0;
+      return ms;
+    }
   }
 }

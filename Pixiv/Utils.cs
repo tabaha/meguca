@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace meguca.Pixiv {
   public class Utils {
-    private static string WorkPageURL = @"https://www.pixiv.net/member_illust.php?mode=medium&illust_id=";
+    public static string WorkPageURL = @"https://www.pixiv.net/member_illust.php?mode=medium&illust_id=";
     private static string BookmarkNewIllustURL = @"https://www.pixiv.net/bookmark_new_illust.php?p=";
     private static string BigMangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=";
     private static string MangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga&illust_id=";

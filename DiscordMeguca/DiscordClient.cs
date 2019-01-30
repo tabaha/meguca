@@ -7,7 +7,7 @@ using meguca.IRC;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace meguca.Discord {
+namespace meguca.DiscordMeguca {
   class DiscordClient {
 
     private DiscordSettings Settings;
@@ -39,6 +39,21 @@ namespace meguca.Discord {
               foreach (var image in res.Attachments.Select(attach => attach.Url)) {
                 await IRCClient.SendAsync($"PRIVMSG #onioniichan :{image}");
               }
+            }
+          }
+          if(message.Channel.Id == 337692280267997196 && message.Content.StartsWith(Pixiv.Utils.WorkPageURL)) {
+            try {
+              Pixiv.Downloader down = new Pixiv.Downloader("pixiv.json");
+              long id = Pixiv.Utils.GetID(message.Content);
+              foreach(var result in down.GetWork(message.Content)) {
+                var response = await message.Channel.SendFileAsync(result.Value, result.Key);
+                foreach (var attach in response.Attachments.Select(a => a.Url))
+                  await IRCClient.SendToChannelAsync("#onioniichan", attach);
+                result.Value.Dispose();
+              }
+            }
+            catch {
+              await message.Channel.SendMessageAsync("Error fetching the image");
             }
           }
         }

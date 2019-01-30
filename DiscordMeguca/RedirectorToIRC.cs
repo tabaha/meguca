@@ -5,7 +5,7 @@ using System.IO;
 using Newtonsoft.Json;
 using meguca.IRC;
 
-namespace meguca.Discord {
+namespace meguca.DiscordMeguca {
   class RedirectorToIRC {
     List<RedirectToIRC> Redirects;
 

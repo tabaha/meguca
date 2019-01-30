@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace meguca.Discord {
+namespace meguca.DiscordMeguca {
   class RedirectToIRC {
     public ulong DiscordChannel { get; private set; }
     public string IRCChannel { get; private set; }
