@@ -7,14 +7,14 @@ using System.Net;
 using meguca.Pixiv.Model;
 
 namespace meguca.Pixiv {
-  class Downloader {
+  class PixivDownloader {
     Settings Settings;
 
     private Cookie AuthCookie;
     private CookieContainer Cookies;
     
 
-    public Downloader(string settingsPath) {
+    public PixivDownloader(string settingsPath) {
 
       if(File.Exists(settingsPath)) {
         var json = File.ReadAllText(settingsPath);
@@ -57,33 +57,36 @@ namespace meguca.Pixiv {
           return dic;
         }
       }
-
-
       return new Dictionary<string, MemoryStream>();
-
-
-      var workTypeMatch = Utils.WorkTypeRegex.Match(page);
-      if(workTypeMatch.Success) {
-        switch (workTypeMatch.Groups["type"].Value) {
-          case "manga":
-            break;
-          default:
-            break;
-        }
-      }
-      else {
-        var singeWorkMatch = Utils.SingleWorkLocationRegex.Match(page);
-        using (StreamWriter w = new StreamWriter("test.html")) {
-          w.Write(page);
-        }
-        if (singeWorkMatch.Success && singeWorkMatch.Groups["extension"].Success) {
-          DownloadFile(singeWorkMatch.Value, url, $"{id}_p0.{singeWorkMatch.Groups["extension"].Value}");
-        }
-      }
     }
 
-    private void DownloadSinglePageWork() {
+    public Illustration GetIllustration(long id) {
+      if (id <= 0)
+        return null;
 
+      var page = GetPage(Utils.GetWorkURL(id), @"https://pixiv.net");
+      var startJson = page.IndexOf("({token:");
+      var endJson = page.IndexOf("});", startJson);
+      page = page.Substring(startJson + 1, endJson - startJson);
+      var illust = JsonConvert.DeserializeObject<Page>(page);
+
+      return illust.Illustration;
+    }
+
+    public Dictionary<string, MemoryStream> DownloadIllustration(Illustration illust) {
+      var ret = new Dictionary<string, MemoryStream>();
+      string workUrl = Utils.GetWorkURL(illust.IllustID);
+      if (illust.PageCount == 1 && !string.IsNullOrWhiteSpace(illust.Urls.Original)) {
+        ret.Add(Path.GetFileName(illust.Urls.Original), DownloadToMemory(illust.Urls.Original, workUrl));
+      }
+      else if(illust.PageCount > 1) {
+        for(int page = 0; page < illust.PageCount; page++) {
+          string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
+          ret.Add(Path.GetFileName(pageUrl), DownloadToMemory(pageUrl, workUrl));
+        }
+      }
+
+      return ret;
     }
 
     private string GetPage(string url, string referer) {
@@ -121,5 +124,7 @@ namespace meguca.Pixiv {
       ms.Position = 0;
       return ms;
     }
+
+
   }
 }

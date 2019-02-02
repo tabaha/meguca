@@ -10,5 +10,16 @@ namespace meguca.Pixiv.Model {
     [JsonProperty("tags")]
     public List<Tag> TagsCollection;
     public bool Writable;
+
+    public override string ToString() {
+      List<string> tags = new List<string>();
+      foreach (var tag in TagsCollection) {
+        if (tag.Translation != null && !string.IsNullOrWhiteSpace(tag.Translation.EN))
+          tags.Add(tag.Translation.EN);
+        else
+          tags.Add($"{tag.Name}({tag.Romaji})");
+      }
+      return string.Join(", ", tags);
+    }
   }
 }

@@ -10,7 +10,7 @@ namespace meguca.Pixiv.Model {
     public bool Locked;
     public bool Deletable;
     public long UserId;
-    public string romaji;
+    public string Romaji;
     [JsonProperty("translation")]
     public Translation Translation;
     public string Username;

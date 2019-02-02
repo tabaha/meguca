@@ -6,6 +6,7 @@ using Discord;
 using meguca.IRC;
 using System.Linq;
 using System.Threading.Tasks;
+using meguca.Pixiv;
 
 namespace meguca.DiscordMeguca {
   class DiscordClient {
@@ -16,9 +17,12 @@ namespace meguca.DiscordMeguca {
 
     public IRCClient IRCClient;
 
-    public DiscordClient(DiscordSettings settings) {
+    public PixivDownloader PixivDownloader;
+
+    public DiscordClient(DiscordSettings settings, PixivDownloader downloader) {
       Client = new DiscordSocketClient();
       Settings = settings;
+      PixivDownloader = downloader;
 
       SetupBot();
     }
@@ -27,25 +31,17 @@ namespace meguca.DiscordMeguca {
       Client.MessageReceived += async (messageParams) => {
         var message = messageParams;
         if (message == null) return;
-        Console.WriteLine("Discord::" + message.Content);
+        Console.WriteLine(MessageToString(message));
       };
 
       Client.MessageReceived += async (messageParams) => {
         var message = messageParams;
         if (!string.IsNullOrWhiteSpace(message.Content)) {
-          if (message.Content.StartsWith("!pixiv")) {
-            var res = await message.Channel.SendFileAsync(@"C:\pictures\wallpapers\72727155_p0 - 0117.jpg");
-            if (res != null) {
-              foreach (var image in res.Attachments.Select(attach => attach.Url)) {
-                await IRCClient.SendAsync($"PRIVMSG #onioniichan :{image}");
-              }
-            }
-          }
+
           if(message.Channel.Id == 337692280267997196 && message.Content.StartsWith(Pixiv.Utils.WorkPageURL)) {
             try {
-              Pixiv.Downloader down = new Pixiv.Downloader("pixiv.json");
               long id = Pixiv.Utils.GetID(message.Content);
-              foreach(var result in down.GetWork(message.Content)) {
+              foreach(var result in PixivDownloader.GetWork(message.Content)) {
                 var response = await message.Channel.SendFileAsync(result.Value, result.Key);
                 foreach (var attach in response.Attachments.Select(a => a.Url))
                   await IRCClient.SendToChannelAsync("#onioniichan", attach);
@@ -66,6 +62,11 @@ namespace meguca.DiscordMeguca {
       Console.WriteLine("Discord connected?");
 
       await Task.Delay(-1);
+    }
+
+    private string MessageToString(SocketMessage message) {
+      string attachments = (string.Join(" ; ", message.Attachments.Select(a => $"{a.Filename} ({a.Width}x{a.Height}) {a.Url}")));
+      return $"[Discord] #{message.Channel.Name} {message.Author.Username}: {attachments}{message.Content}";
     }
 
   }

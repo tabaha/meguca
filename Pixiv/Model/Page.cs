@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace meguca.Pixiv.Model {
   class Page {
@@ -17,5 +18,18 @@ namespace meguca.Pixiv.Model {
     public Preload Preload;
     public Object Mute;
     #endregion
+
+    public long Id {
+      get {
+        return Preload.Illustration.Values.FirstOrDefault().IllustID;
+      }
+    }
+
+    public Illustration Illustration {
+      get {
+        return Preload.Illustration.Values.FirstOrDefault();
+      }
+    }
+ 
   }
 }

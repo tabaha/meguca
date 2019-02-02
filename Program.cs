@@ -8,24 +8,24 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using System.IO;
+using meguca.Pixiv;
 
 namespace meguca {
   class Program {
 
-    private DiscordSocketClient Client;
-    private string _BotToken;
     static void Main(string[] args) {
+
 
       //Pixiv.Downloader downloader = new Pixiv.Downloader("pixiv.json");
       //downloader.GetWork(@"https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72911254");
       //return;
 
       //return;
-
+      PixivDownloader downloader = new PixivDownloader("pixiv.json");
       IRCSettings ircSettings = IRCSettings.Load("irc.json");
-      IRCClient ircClient = new IRCClient(ircSettings);
+      IRCClient ircClient = new IRCClient(ircSettings, downloader);
       DiscordSettings discordSettings = DiscordSettings.Load("discord.json");
-      DiscordClient discordClient = new DiscordClient(discordSettings);
+      DiscordClient discordClient = new DiscordClient(discordSettings, downloader);
       discordClient.IRCClient = ircClient;
       ircClient.DiscordClient = discordClient;
       ircClient.Setup();
