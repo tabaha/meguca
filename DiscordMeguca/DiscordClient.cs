@@ -7,6 +7,7 @@ using meguca.IRC;
 using System.Linq;
 using System.Threading.Tasks;
 using meguca.Pixiv;
+using System.IO;
 
 namespace meguca.DiscordMeguca {
   class DiscordClient {
@@ -38,18 +39,24 @@ namespace meguca.DiscordMeguca {
         var message = messageParams;
         if (!string.IsNullOrWhiteSpace(message.Content)) {
 
-          if(message.Channel.Id == 337692280267997196 && message.Content.StartsWith(Pixiv.Utils.WorkPageURL)) {
+          if((message.Channel.Id == 337692280267997196 || message.Channel.Id == 131902567457357824) && message.Content.StartsWith(Pixiv.Utils.WorkPageURL)) {
+            Dictionary<string, MemoryStream> downloadedImages = new Dictionary<string, MemoryStream>();
             try {
               long id = Pixiv.Utils.GetID(message.Content);
-              foreach(var result in PixivDownloader.GetWork(message.Content)) {
-                var response = await message.Channel.SendFileAsync(result.Value, result.Key);
-                foreach (var attach in response.Attachments.Select(a => a.Url))
-                  await IRCClient.SendToChannelAsync("#onioniichan", attach);
-                result.Value.Dispose();
+              var illust = PixivDownloader.GetIllustration(id);
+              downloadedImages = PixivDownloader.DownloadIllustration(illust);
+              string tags = illust.Tags.ToString();
+              foreach (var result in downloadedImages) {
+                var response = await message.Channel.SendFileAsync(result.Value, result.Key, $"Tags: {tags}");
               }
             }
-            catch {
-              await message.Channel.SendMessageAsync("Error fetching the image");
+            catch (Exception ex) {
+              Console.WriteLine(ex.Message);
+            }
+            finally {
+              foreach (var ms in downloadedImages.Values)
+                ms.Dispose();
+              downloadedImages.Clear();
             }
           }
         }

@@ -6,6 +6,7 @@ using meguca.DiscordMeguca;
 using Discord;
 using System.Linq;
 using meguca.Pixiv;
+using System.Collections.Generic;
 
 namespace meguca.IRC {
   class IRCClient {
@@ -54,20 +55,26 @@ namespace meguca.IRC {
           if (msgToken.StartsWith(":"))
             msgToken = msgToken.Substring(1);
           if (msgToken.StartsWith(Pixiv.Utils.WorkPageURL)) {
+            Dictionary<string, MemoryStream> downloadedImages = new Dictionary<string, MemoryStream>();
             try {
               long id = Pixiv.Utils.GetID(msgToken);
               var channel = DiscordClient.Client.GetChannel(337692280267997196) as IMessageChannel;
               var illust = PixivDownloader.GetIllustration(id);
-              foreach (var result in PixivDownloader.DownloadIllustration(illust)) {
+              downloadedImages = PixivDownloader.DownloadIllustration(illust);
+              foreach (var result in downloadedImages) {
                 var response = await channel.SendFileAsync(result.Value, result.Key);
                 foreach (var attach in response.Attachments.Select(a => a.Url))
                   await SendToChannelAsync("#onioniichan", attach);
-                result.Value.Dispose();
               }
             }
             catch (Exception ex){
               Console.WriteLine(ex.Message);
               await SendToChannelAsync("#onioniichan", "Error fetching the image");
+            }
+            finally {
+              foreach (var ms in downloadedImages.Values)
+                ms.Dispose();
+              downloadedImages.Clear();
             }
           }
         }

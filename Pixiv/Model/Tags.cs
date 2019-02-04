@@ -17,7 +17,7 @@ namespace meguca.Pixiv.Model {
         if (tag.Translation != null && !string.IsNullOrWhiteSpace(tag.Translation.EN))
           tags.Add(tag.Translation.EN);
         else
-          tags.Add($"{tag.Name}({tag.Romaji})");
+          tags.Add($"{tag.Name}"); //fix later to add romaji properly if it exists
       }
       return string.Join(", ", tags);
     }

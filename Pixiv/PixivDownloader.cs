@@ -76,7 +76,13 @@ namespace meguca.Pixiv {
     public Dictionary<string, MemoryStream> DownloadIllustration(Illustration illust) {
       var ret = new Dictionary<string, MemoryStream>();
       string workUrl = Utils.GetWorkURL(illust.IllustID);
-      if (illust.PageCount == 1 && !string.IsNullOrWhiteSpace(illust.Urls.Original)) {
+      if(illust.IllustType == 2) {
+        //https://www.pixiv.net/ajax/illust/{id}/ugoira_meta
+        string ext = Path.GetExtension(illust.Urls.Original);
+        string pathUgoira = illust.Urls.Original.Replace("img-original", "img-zip-ugoira").Replace($"_ugoira0{ext}", "_ugoira1920x1080.zip");
+        ret.Add(Path.GetFileName(pathUgoira), DownloadToMemory(pathUgoira, workUrl));
+      }
+      else if (illust.PageCount == 1 && !string.IsNullOrWhiteSpace(illust.Urls.Original)) {
         ret.Add(Path.GetFileName(illust.Urls.Original), DownloadToMemory(illust.Urls.Original, workUrl));
       }
       else if(illust.PageCount > 1) {
