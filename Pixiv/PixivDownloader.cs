@@ -65,12 +65,21 @@ namespace meguca.Pixiv {
         return null;
 
       var page = GetPage(Utils.GetWorkURL(id), @"https://pixiv.net");
-      var startJson = page.IndexOf("({token:");
-      var endJson = page.IndexOf("});", startJson);
-      page = page.Substring(startJson + 1, endJson - startJson);
-      var illust = JsonConvert.DeserializeObject<Page>(page);
+      var startJson = page.IndexOf("{\"token\":");
+      var endJson = page.IndexOf("}'>", startJson) + 1;
+      string headerText = page.Substring(startJson, endJson - startJson);
+      var header = JsonConvert.DeserializeObject<Page>(headerText);
 
-      return illust.Illustration;
+      startJson = page.IndexOf("content='", endJson) + "content='".Length;
+      endJson = page.IndexOf("}'>", startJson) + 1;
+      string preloadText = page.Substring(startJson, endJson - startJson);
+
+      var preload = JsonConvert.DeserializeObject<Preload>(preloadText);
+      header.Preload = preload;
+
+
+
+      return header.Illustration;
     }
 
     public Dictionary<string, MemoryStream> DownloadIllustration(Illustration illust) {

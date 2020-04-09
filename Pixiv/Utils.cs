@@ -5,10 +5,10 @@ using System.Text.RegularExpressions;
 
 namespace meguca.Pixiv {
   public class Utils {
-    public static string WorkPageURL = @"https://www.pixiv.net/member_illust.php?mode=medium&illust_id=";
-    private static string BookmarkNewIllustURL = @"https://www.pixiv.net/bookmark_new_illust.php?p=";
-    private static string BigMangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=";
-    private static string MangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga&illust_id=";
+    public static string WorkPageURL = @"https://www.pixiv.net/en/artworks/";
+    //private static string BookmarkNewIllustURL = @"https://www.pixiv.net/bookmark_new_illust.php?p=";
+    //private static string BigMangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=";
+    //private static string MangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga&illust_id=";
 
     #region REGEX
     private static string SingleWorkLocationExpression = @"https?://i.pximg.net/img-original/img/\d+/\d+/\d+/\d+/\d+/\d+/\d+_p\d+.(?<extension>\w+)";
@@ -19,11 +19,11 @@ namespace meguca.Pixiv {
 
     public static string WorkIDExpression = @"\d+";
 
-    public static Regex SingleWorkLocationRegex = new Regex(SingleWorkLocationExpression);
-    public static Regex WorkThumbnailRegex = new Regex(WorkThumbnailExpression);
-    public static Regex WorkPageRegex = new Regex(WorkPageExpression);
-    public static Regex WorkTypeRegex = new Regex(WorkTypeExpression);
-    public static Regex MultiplePagesNumberRegex = new Regex(MultiplePagesNumberExpression);
+    //public static Regex SingleWorkLocationRegex = new Regex(SingleWorkLocationExpression);
+    //public static Regex WorkThumbnailRegex = new Regex(WorkThumbnailExpression);
+    //public static Regex WorkPageRegex = new Regex(WorkPageExpression);
+    //public static Regex WorkTypeRegex = new Regex(WorkTypeExpression);
+    //public static Regex MultiplePagesNumberRegex = new Regex(MultiplePagesNumberExpression);
 
     public static Regex WorkIDRegex = new Regex(WorkIDExpression);
     #endregion
@@ -32,17 +32,17 @@ namespace meguca.Pixiv {
       return WorkPageURL + id;
     }
 
-    public static string GetBookmarkNewIllustURL(int page) {
-      return BookmarkNewIllustURL + page;
-    }
+    //public static string GetBookmarkNewIllustURL(int page) {
+    //  return BookmarkNewIllustURL + page;
+    //}
 
-    public static string GetBigMangaURL(long id, int pageNumber) {
-      return BigMangaURL + id + "&page=" + pageNumber;
-    }
+    //public static string GetBigMangaURL(long id, int pageNumber) {
+    //  return BigMangaURL + id + "&page=" + pageNumber;
+    //}
 
-    public static string GetMangaURL(long id) {
-      return MangaURL + id;
-    }
+    //public static string GetMangaURL(long id) {
+    //  return MangaURL + id;
+    //}
 
     public static long GetID(string url) {
       var m = WorkIDRegex.Match(url);

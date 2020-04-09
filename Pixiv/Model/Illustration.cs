@@ -19,6 +19,7 @@ namespace meguca.Pixiv.Model {
     public int Sl;
     public IllustrationUrls Urls;
     public Tags Tags;
+    public string Alt;
     public List<string> StorableTags;
     public long UserID;
     public string UserName;
@@ -41,12 +42,16 @@ namespace meguca.Pixiv.Model {
     public Object PollData;
     public Object SeriesNavData;
     public Object DescriptionBoothId;
+    public Object DescriptionYoutubeId;
     public Object ComicPromotion;
+    public Object FanboxPromotion;
     public Object ContestBanners;
     public FactoryGoods FactoryGoods;
+    [JsonProperty("isBookmarkable")]
     public bool Bookmarkable;
     public Object BookmarkData;
     public Object ContestData;
     public Object ZoneConfig;
+    public Object ExtraData;
   }
 }

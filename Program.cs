@@ -15,7 +15,6 @@ namespace meguca {
 
     static void Main(string[] args) {
 
-
       //Pixiv.Downloader downloader = new Pixiv.Downloader("pixiv.json");
       //downloader.GetWork(@"https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72911254");
       //return;

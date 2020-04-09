@@ -20,6 +20,8 @@ namespace meguca.DiscordMeguca {
 
     public PixivDownloader PixivDownloader;
 
+    public List<ulong> PixivChannels => Settings.PixivChannels;
+
     public DiscordClient(DiscordSettings settings, PixivDownloader downloader) {
       Client = new DiscordSocketClient();
       Settings = settings;
@@ -39,15 +41,17 @@ namespace meguca.DiscordMeguca {
         var message = messageParams;
         if (!string.IsNullOrWhiteSpace(message.Content)) {
 
-          if((message.Channel.Id == 337692280267997196 || message.Channel.Id == 131902567457357824) && message.Content.StartsWith(Pixiv.Utils.WorkPageURL)) {
+          if(PixivChannels.Contains(message.Channel.Id) && (message.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || message.Content.StartsWith("!pixiv"))) {
             Dictionary<string, MemoryStream> downloadedImages = new Dictionary<string, MemoryStream>();
             try {
               long id = Pixiv.Utils.GetID(message.Content);
               var illust = PixivDownloader.GetIllustration(id);
-              downloadedImages = PixivDownloader.DownloadIllustration(illust);
               string tags = illust.Tags.ToString();
+              downloadedImages = PixivDownloader.DownloadIllustration(illust);
+              bool tagsSent = false;
               foreach (var result in downloadedImages) {
-                var response = await message.Channel.SendFileAsync(result.Value, result.Key, $"Tags: {tags}");
+                var response = await message.Channel.SendFileAsync(result.Value, result.Key, !tagsSent ? $"Tags: {tags}" : null);
+                tagsSent = true;
               }
             }
             catch (Exception ex) {
