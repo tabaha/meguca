@@ -5,6 +5,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Net;
 using meguca.Pixiv.Model;
+using System.Threading.Tasks;
 
 namespace meguca.Pixiv {
   class PixivDownloader {
@@ -102,6 +103,32 @@ namespace meguca.Pixiv {
       }
 
       return ret;
+    }
+
+    public void DownloadIllustration(Illustration illust, Action<string, int, MemoryStream> action) {
+      //var ret = new Dictionary<string, MemoryStream>();
+      string workUrl = Utils.GetWorkURL(illust.IllustID);
+      if (illust.IllustType == 2) {
+        //https://www.pixiv.net/ajax/illust/{id}/ugoira_meta
+        string ext = Path.GetExtension(illust.Urls.Original);
+        string pathUgoira = illust.Urls.Original.Replace("img-original", "img-zip-ugoira").Replace($"_ugoira0{ext}", "_ugoira1920x1080.zip");
+        Task t = new Task(() => action(Path.GetFileName(pathUgoira), 0, DownloadToMemory(pathUgoira, workUrl)));
+        t.Start();
+        //ret.Add(Path.GetFileName(pathUgoira), DownloadToMemory(pathUgoira, workUrl));
+      }
+      else if (illust.PageCount == 1 && !string.IsNullOrWhiteSpace(illust.Urls.Original)) {
+        Task t = new Task(() => action(Path.GetFileName(illust.Urls.Original), 0, DownloadToMemory(illust.Urls.Original, workUrl)));
+        t.Start();
+        //ret.Add(Path.GetFileName(illust.Urls.Original), DownloadToMemory(illust.Urls.Original, workUrl));
+      }
+      else if (illust.PageCount > 1) {
+        for (int page = 0; page < illust.PageCount; page++) {
+          string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
+          Task t = new Task(() => action(Path.GetFileName(pageUrl), page, DownloadToMemory(pageUrl, workUrl)));
+          t.Start();
+        }
+      }
+      //return ret;
     }
 
     private string GetPage(string url, string referer) {

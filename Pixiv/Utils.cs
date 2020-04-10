@@ -5,7 +5,8 @@ using System.Text.RegularExpressions;
 
 namespace meguca.Pixiv {
   public class Utils {
-    public static string WorkPageURL = @"https://www.pixiv.net/en/artworks/";
+    public static string WorkPageURL = @"https://www.pixiv.net/artworks/";
+    public static string WorkPageURL_EN = @"https://www.pixiv.net/en/artworks/";
     //private static string BookmarkNewIllustURL = @"https://www.pixiv.net/bookmark_new_illust.php?p=";
     //private static string BigMangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=";
     //private static string MangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga&illust_id=";
@@ -29,7 +30,7 @@ namespace meguca.Pixiv {
     #endregion
 
     public static string GetWorkURL(long id) {
-      return WorkPageURL + id;
+      return WorkPageURL_EN + id;
     }
 
     //public static string GetBookmarkNewIllustURL(int page) {
