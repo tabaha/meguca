@@ -60,7 +60,7 @@ namespace meguca.IRC
 
     public void Save(string path)
     {
-      File.WriteAllText(path, JsonConvert.SerializeObject(this));
+      File.WriteAllText(path, JsonConvert.SerializeObject(this, Formatting.Indented));
     }
   }
 }

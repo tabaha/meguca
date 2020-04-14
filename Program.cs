@@ -19,10 +19,11 @@ namespace meguca {
       //downloader.GetWork(@"https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72911254");
       //return;
 
-      //return;
+
       PixivDownloader downloader = new PixivDownloader("pixiv.json");
-      IRCSettings ircSettings = IRCSettings.Load("irc.json");
-      IRCClient ircClient = new IRCClient(ircSettings, downloader);
+      IRCClient ircClient = JsonConvert.DeserializeObject<IRCClient>(File.ReadAllText("irc.json"));
+      ircClient.PixivDownloader = downloader;
+
       DiscordSettings discordSettings = DiscordSettings.Load("discord.json");
       DiscordClient discordClient = new DiscordClient(discordSettings, downloader);
       discordClient.IRCClient = ircClient;

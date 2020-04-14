@@ -7,6 +7,8 @@ using Discord;
 using System.Linq;
 using meguca.Pixiv;
 using System.Collections.Generic;
+using meguca.IRC.Commands;
+using Newtonsoft.Json;
 
 namespace meguca.IRC {
   class IRCClient {
@@ -18,18 +20,29 @@ namespace meguca.IRC {
     public IRCSettings Settings { get; private set; }
     public event EventHandler<IRCEventArgs> ReadLine;
     public event EventHandler<IRCEventArgs> WriteLine;
+    [JsonIgnore()]
     public DiscordClient DiscordClient;
+    [JsonIgnore()]
     public PixivDownloader PixivDownloader;
+    public Decide DecideCommand { get; private set; }
 
-    public IRCClient(IRCSettings settings, PixivDownloader downloader) {
-      Settings = settings;
-      PixivDownloader = downloader;
-
+    public IRCClient() {
       ReadLine += Ping;
       ReadLine += Identify;
-
       ReadLine += DisplayLine;
       WriteLine += DisplayLine;
+
+      Settings = new IRCSettings();
+      DecideCommand = new Decide();
+
+      ReadLine += DecideCommand.Process;
+    }
+
+    public IRCClient(IRCSettings settings, PixivDownloader downloader) : this() {
+      Settings = settings;
+      PixivDownloader = downloader;
+      DecideCommand = new Decide();
+
     }
 
     private void DisplayLine(object sender, IRCEventArgs e) {
@@ -74,7 +87,7 @@ namespace meguca.IRC {
         string line;
         while (true) {
           while ((line = Reader.ReadLine()) != null) {
-            OnReadLine(new IRCEventArgs() { Time = DateTime.Now, Line = line, Tokens = line.Split(' ') });
+            OnReadLine(new IRCEventArgs(DateTime.Now, line));
           }
         }
       }
@@ -86,12 +99,12 @@ namespace meguca.IRC {
 
     public void Send(string text) {
       Writer.WriteLine(text);
-      OnWriteLine(new IRCEventArgs() { Time = DateTime.Now, Line = text });
+      OnWriteLine(new IRCEventArgs(DateTime.Now, text));
     }
 
     public async Task SendAsync(string text) {
       await Writer.WriteLineAsync(text);
-      OnWriteLine(new IRCEventArgs() { Time = DateTime.Now, Line = text });
+      OnWriteLine(new IRCEventArgs(DateTime.Now, text));
     }
 
     public async Task SendToChannelAsync(string channel, string text) {
