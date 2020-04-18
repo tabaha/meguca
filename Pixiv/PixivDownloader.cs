@@ -83,7 +83,7 @@ namespace meguca.Pixiv {
       return header.Illustration;
     }
 
-    public Dictionary<string, MemoryStream> DownloadIllustration(Illustration illust) {
+    public Dictionary<string, MemoryStream> DownloadIllustration(Illustration illust, int? maxBytes = null) {
       var ret = new Dictionary<string, MemoryStream>();
       string workUrl = Utils.GetWorkURL(illust.IllustID);
       if(illust.IllustType == 2) {

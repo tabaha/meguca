@@ -25,6 +25,7 @@ namespace meguca.IRC {
     [JsonIgnore()]
     public PixivDownloader PixivDownloader;
     public Decide DecideCommand { get; private set; }
+    public UrlTitle UrlTitleCommand { get; private set; }
 
     public IRCClient() {
       ReadLine += Ping;
@@ -34,15 +35,10 @@ namespace meguca.IRC {
 
       Settings = new IRCSettings();
       DecideCommand = new Decide();
+      UrlTitleCommand = new UrlTitle();
 
       ReadLine += DecideCommand.Process;
-    }
-
-    public IRCClient(IRCSettings settings, PixivDownloader downloader) : this() {
-      Settings = settings;
-      PixivDownloader = downloader;
-      DecideCommand = new Decide();
-
+      ReadLine += UrlTitleCommand.Process;
     }
 
     private void DisplayLine(object sender, IRCEventArgs e) {
