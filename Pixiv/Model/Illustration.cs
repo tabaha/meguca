@@ -53,5 +53,9 @@ namespace meguca.Pixiv.Model {
     public Object ContestData;
     public Object ZoneConfig;
     public Object ExtraData;
+
+    public bool IsSFW => XRestrict == 0;
+    public bool IsR18 => XRestrict > 0;
+    public bool IsR18G => XRestrict == 2;
   }
 }

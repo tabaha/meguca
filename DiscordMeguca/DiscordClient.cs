@@ -8,24 +8,25 @@ using System.Linq;
 using System.Threading.Tasks;
 using meguca.Pixiv;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace meguca.DiscordMeguca {
   class DiscordClient {
 
-    private DiscordSettings Settings;
+    public DiscordSettings Settings;
 
+    [JsonIgnore()]
     public DiscordSocketClient Client;
-
+    [JsonIgnore()]
     public IRCClient IRCClient;
-
+    [JsonIgnore()]
     public PixivDownloader PixivDownloader;
+    [JsonIgnore()]
+    public Dictionary<ulong, PixivChannelSettings> PixivChannels => Settings.PixivChannels;
 
-    public List<ulong> PixivChannels => Settings.PixivChannels;
-
-    public DiscordClient(DiscordSettings settings, PixivDownloader downloader) {
+    public DiscordClient() {
+      Settings = new DiscordSettings();
       Client = new DiscordSocketClient();
-      Settings = settings;
-      PixivDownloader = downloader;
 
       SetupBot();
     }
@@ -38,11 +39,15 @@ namespace meguca.DiscordMeguca {
     private async Task PixivCommand(SocketMessage msg) {
       if (!string.IsNullOrWhiteSpace(msg.Content)) {
 
-        if (PixivChannels.Contains(msg.Channel.Id) && (msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || msg.Content.StartsWith("!pixiv"))) {
+        if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettings) && (msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || msg.Content.StartsWith("!pixiv"))) {
           Dictionary<string, MemoryStream> downloadedImages = new Dictionary<string, MemoryStream>();
           try {
             long id = Pixiv.Utils.GetID(msg.Content);
             var illust = PixivDownloader.GetIllustration(id);
+            if((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G )) {
+              Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
+              return;
+            }
             string tags = illust.Tags.ToString();
             downloadedImages = PixivDownloader.DownloadIllustration(illust);
             bool tagsSent = false;
@@ -60,20 +65,20 @@ namespace meguca.DiscordMeguca {
             downloadedImages.Clear();
           }
         }
-        if (PixivChannels.Contains(msg.Channel.Id) && msg.Content.StartsWith("!ppixiv")) {
-          try {
-            long id = Pixiv.Utils.GetID(msg.Content);
-            var illust = PixivDownloader.GetIllustration(id);
-            string tags = illust.Tags.ToString();
-            PixivDownloader.DownloadIllustration(illust, async (s, i, ms) => { await msg.Channel.SendFileAsync(ms, s, i == 0 ? $"Tags: {tags}" : null); ms.Dispose(); });
-          }
-          catch (Exception ex) {
-            Console.WriteLine(ex.Message);
-          }
-          finally {
+        //else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsP) && msg.Content.StartsWith("!ppixiv")) {
+        //  try {
+        //    long id = Pixiv.Utils.GetID(msg.Content);
+        //    var illust = PixivDownloader.GetIllustration(id);
+        //    string tags = illust.Tags.ToString();
+        //    PixivDownloader.DownloadIllustration(illust, async (s, i, ms) => { await msg.Channel.SendFileAsync(ms, s, i == 0 ? $"Tags: {tags}" : null); ms.Dispose(); });
+        //  }
+        //  catch (Exception ex) {
+        //    Console.WriteLine(ex.Message);
+        //  }
+        //  finally {
 
-          }
-        }
+        //  }
+        //}
       }
     }
 
