@@ -87,7 +87,15 @@ namespace meguca.DiscordMeguca {
             var illust = PixivDownloader.GetIllustration(id);
             string tags = illust.Tags.ToString();
             foreach (var image in await PixivDownloader.DownLoadIllistrationVoldyAsync(illust)) {
-              var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
+              try {
+                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
+              }
+              catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+              }
+              finally {
+                image.Dispose();
+              }
             }
           }
           catch (Exception ex) {
