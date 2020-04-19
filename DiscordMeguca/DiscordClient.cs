@@ -9,9 +9,12 @@ using System.Threading.Tasks;
 using meguca.Pixiv;
 using System.IO;
 using Newtonsoft.Json;
+using meguca.Pixiv.Model;
 
 namespace meguca.DiscordMeguca {
   class DiscordClient {
+    [JsonIgnore]
+    public static int MaxUploadBytes = 8388119;
 
     public DiscordSettings Settings;
 
@@ -65,22 +68,6 @@ namespace meguca.DiscordMeguca {
             downloadedImages.Clear();
           }
         }
-        else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsP) && msg.Content.StartsWith("!ppixiv")) {
-          try {
-            long id = Pixiv.Utils.GetID(msg.Content);
-            var illust = PixivDownloader.GetIllustration(id);
-            string tags = illust.Tags.ToString();
-            foreach(var image in await PixivDownloader.DownLoadIllistrationTestAsync(illust)) {
-              var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
-            }
-          }
-          catch (Exception ex) {
-            Console.WriteLine(ex.Message);
-          }
-          finally {
-
-          }
-        }
         else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsPP) && msg.Content.StartsWith("!pppixiv")) {
           try {
             long id = Pixiv.Utils.GetID(msg.Content);
@@ -110,10 +97,13 @@ namespace meguca.DiscordMeguca {
             long id = Pixiv.Utils.GetID(msg.Content);
             var illust = PixivDownloader.GetIllustration(id);
             string tags = illust.Tags.ToString();
-            foreach (var imageTask in PixivDownloader.DownLoadIllistrationVoldyAsyncImproved(illust).ToList()) {
+            foreach (var imageTask in PixivDownloader.DownLoadIllistrationVoldyAsyncImproved(illust, MaxUploadBytes).ToList()) {
               using (var image = await imageTask) {
                 Console.WriteLine($"Sending page {image.PageNumber}");
-                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
+                string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
+                if (!image.IsOriginal)
+                  text += " (preview version)";
+                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, string.IsNullOrEmpty(text) ? null : text.Trim());
               }
             }
           }

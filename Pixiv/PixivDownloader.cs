@@ -7,6 +7,8 @@ using System.Net;
 using meguca.Pixiv.Model;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Net.Http;
+using meguca.DiscordMeguca;
 
 namespace meguca.Pixiv {
 
@@ -30,11 +32,13 @@ namespace meguca.Pixiv {
     public string Filename { get; }
     public int PageNumber { get; }
     public Stream ImageData{ get; }
+    public bool IsOriginal { get; }
 
-    public DownloadedImageVoldy(string filename, int pageNumber, Stream imageData) {
+    public DownloadedImageVoldy(string filename, int pageNumber, Stream imageData, bool isOriginal) {
       Filename = filename;
       PageNumber = pageNumber;
       ImageData = imageData;
+      IsOriginal = isOriginal;
     }
 
     public void Dispose() {
@@ -47,7 +51,9 @@ namespace meguca.Pixiv {
 
     private Cookie AuthCookie;
     private CookieContainer Cookies;
-    
+
+    private HttpClient HttpClient;
+    private HttpClientHandler HttpClientHandler;
 
     public PixivDownloader(string settingsPath) {
 
@@ -62,7 +68,8 @@ namespace meguca.Pixiv {
       AuthCookie = new Cookie("PHPSESSID", Settings.Cookie, "/", ".pixiv.net");
       Cookies = new CookieContainer();
       Cookies.Add(AuthCookie);
-
+      HttpClientHandler = new HttpClientHandler() { CookieContainer = Cookies };
+      HttpClient = new HttpClient(HttpClientHandler);
     }
 
 
@@ -179,13 +186,13 @@ namespace meguca.Pixiv {
         return null;
     }
 
-    public async Task<IEnumerable<DownloadedImageVoldy>> DownLoadIllistrationVoldyAsync(Illustration illust) {
+    public async Task<IEnumerable<DownloadedImageVoldy>> DownLoadIllistrationVoldyAsync(Illustration illust, int? maxBytes = null) {
       string workUrl = Utils.GetWorkURL(illust.IllustID);
       if (!string.IsNullOrWhiteSpace(illust.Urls.Original)) {
         var tasks = new List<Task<DownloadedImageVoldy>>();
         for (int page = 0; page < illust.PageCount; page++) {
           string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
-          tasks.Add(DownloadToMemoryVoldy(pageUrl, workUrl, Path.GetFileName(pageUrl), page));
+          tasks.Add(DownloadToMemoryVoldy(illust, workUrl, page, maxBytes));
         }
         return await Task.WhenAll(tasks);
       }
@@ -193,14 +200,14 @@ namespace meguca.Pixiv {
         return await Task.FromResult(Enumerable.Empty<DownloadedImageVoldy>());
     }
 
-    public IEnumerable<Task<DownloadedImageVoldy>> DownLoadIllistrationVoldyAsyncImproved(Illustration illust) {
+    public IEnumerable<Task<DownloadedImageVoldy>> DownLoadIllistrationVoldyAsyncImproved(Illustration illust, int? maxBytes = null) {
       var workUrl = Utils.GetWorkURL(illust.IllustID);
       if (string.IsNullOrWhiteSpace(illust.Urls.Original))
         return Enumerable.Empty<Task<DownloadedImageVoldy>>();
       return Enumerable.Range(0, illust.PageCount)
         .Select((page) => {
           var pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
-          return DownloadToMemoryVoldy(pageUrl, workUrl, Path.GetFileName(pageUrl), page);
+          return DownloadToMemoryVoldy(illust, workUrl, page, maxBytes);
         });
     }
 
@@ -219,6 +226,13 @@ namespace meguca.Pixiv {
       webRequest.CookieContainer = Cookies;
       if (referer != null) webRequest.Referer = referer;
       return webRequest;
+    }
+
+    private HttpRequestMessage CreatePixivRequestMessage(string url, string referer) {
+      var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+      if (!string.IsNullOrEmpty(referer))
+        httpRequestMessage.Headers.Referrer = new Uri(referer);
+      return httpRequestMessage;
     }
 
     private void DownloadFile(string url, string referer, string filename) {
@@ -250,11 +264,21 @@ namespace meguca.Pixiv {
       return new DownloadedImage(fileName, pageNumber, ms);
     }
 
-    private async Task<DownloadedImageVoldy> DownloadToMemoryVoldy(string url, string referer, string fileName, int pageNumber) {
-      var webRequest = CreatePixivWebRequest(url, referer);
-      var response = await webRequest.GetResponseAsync();
-      var stream = response.GetResponseStream();
-      return new DownloadedImageVoldy(fileName, pageNumber, stream);
+    private async Task<DownloadedImageVoldy> DownloadToMemoryVoldy(Illustration illust, string referer, int pageNumber, int? maxBytes = null) {
+      string url = illust.Urls.Original.Replace("_p0", $"_p{pageNumber}");
+      bool isOriginal = true;
+      var message = CreatePixivRequestMessage(url, referer);
+      var response = await HttpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead);
+      if(maxBytes.HasValue && response.Content.Headers.ContentLength > maxBytes) {
+        response.Dispose();
+        url = illust.Urls.Regular.Replace("_p0", $"_p{pageNumber}");
+        message = CreatePixivRequestMessage(url, referer);
+        response = await HttpClient.SendAsync(message);
+        isOriginal = false;
+      }
+      string fileName = Path.GetFileName(url);
+      var stream = await response.Content.ReadAsStreamAsync();
+      return new DownloadedImageVoldy(fileName, pageNumber, stream, isOriginal);
     }
   }
 }
