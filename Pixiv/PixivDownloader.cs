@@ -193,6 +193,17 @@ namespace meguca.Pixiv {
         return await Task.FromResult(Enumerable.Empty<DownloadedImageVoldy>());
     }
 
+    public IEnumerable<Task<DownloadedImageVoldy>> DownLoadIllistrationVoldyAsyncImproved(Illustration illust) {
+      var workUrl = Utils.GetWorkURL(illust.IllustID);
+      if (string.IsNullOrWhiteSpace(illust.Urls.Original))
+        return Enumerable.Empty<Task<DownloadedImageVoldy>>();
+      return Enumerable.Range(0, illust.PageCount)
+        .Select((page) => {
+          var pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
+          return DownloadToMemoryVoldy(pageUrl, workUrl, Path.GetFileName(pageUrl), page);
+        });
+    }
+
     private string GetPage(string url, string referer) {
       var webRequest = CreatePixivWebRequest(url, referer);
       string html;

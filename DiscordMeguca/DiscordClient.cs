@@ -105,6 +105,25 @@ namespace meguca.DiscordMeguca {
 
           }
         }
+        else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsPPP) && msg.Content.StartsWith("!ppppixiv")) {
+          try {
+            long id = Pixiv.Utils.GetID(msg.Content);
+            var illust = PixivDownloader.GetIllustration(id);
+            string tags = illust.Tags.ToString();
+            foreach (var imageTask in PixivDownloader.DownLoadIllistrationVoldyAsyncImproved(illust).ToList()) {
+              using (var image = await imageTask) {
+                Console.WriteLine($"Sending page {image.PageNumber}");
+                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
+              }
+            }
+          }
+          catch (Exception ex) {
+            Console.WriteLine(ex.Message);
+          }
+          finally {
+
+          }
+        }
       }
     }
 
