@@ -46,42 +46,18 @@ namespace meguca.DiscordMeguca {
           Dictionary<string, MemoryStream> downloadedImages = new Dictionary<string, MemoryStream>();
           try {
             long id = Pixiv.Utils.GetID(msg.Content);
-            var illust = PixivDownloader.GetIllustration(id);
+            var illust = await PixivDownloader.GetIllustration(id);
             if((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G )) {
               Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
               return;
             }
             string tags = illust.Tags.ToString();
-            downloadedImages = PixivDownloader.DownloadIllustration(illust);
-            bool tagsSent = false;
-            foreach (var result in downloadedImages) {
-              var response = await msg.Channel.SendFileAsync(result.Value, result.Key, !tagsSent ? $"Tags: {tags}" : null);
-              tagsSent = true;
-            }
-          }
-          catch (Exception ex) {
-            Console.WriteLine(ex.Message);
-          }
-          finally {
-            foreach (var ms in downloadedImages.Values)
-              ms.Dispose();
-            downloadedImages.Clear();
-          }
-        }
-        else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsPP) && msg.Content.StartsWith("!pppixiv")) {
-          try {
-            long id = Pixiv.Utils.GetID(msg.Content);
-            var illust = PixivDownloader.GetIllustration(id);
-            string tags = illust.Tags.ToString();
-            foreach (var image in await PixivDownloader.DownLoadIllistrationVoldyAsync(illust)) {
-              try {
-                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
-              }
-              catch (Exception ex) {
-                Console.WriteLine(ex.Message);
-              }
-              finally {
-                image.Dispose();
+            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, MaxUploadBytes).ToList()) {
+              using (var image = await imageTask) {
+                string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
+                if (!image.IsOriginal)
+                  text += " (preview version)";
+                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, string.IsNullOrEmpty(text) ? null : text.Trim());
               }
             }
           }
@@ -92,18 +68,24 @@ namespace meguca.DiscordMeguca {
 
           }
         }
-        else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsPPP) && msg.Content.StartsWith("!ppppixiv")) {
+        else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsPP) && msg.Content.StartsWith("!ppixiv")) {
           try {
             long id = Pixiv.Utils.GetID(msg.Content);
-            var illust = PixivDownloader.GetIllustration(id);
+            var illust = await PixivDownloader.GetIllustration(id);
+            if ((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G)) {
+              Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
+              return;
+            }
             string tags = illust.Tags.ToString();
-            foreach (var imageTask in PixivDownloader.DownLoadIllistrationVoldyAsyncImproved(illust, MaxUploadBytes).ToList()) {
-              using (var image = await imageTask) {
-                Console.WriteLine($"Sending page {image.PageNumber}");
-                string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
-                if (!image.IsOriginal)
-                  text += " (preview version)";
-                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, string.IsNullOrEmpty(text) ? null : text.Trim());
+            foreach (var image in await PixivDownloader.DownLoadIllistrationAsyncAlternate(illust)) {
+              try {
+                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
+              }
+              catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+              }
+              finally {
+                image.Dispose();
               }
             }
           }

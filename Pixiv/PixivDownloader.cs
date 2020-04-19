@@ -15,26 +15,10 @@ namespace meguca.Pixiv {
   public class DownloadedImage : IDisposable {
     public string Filename { get; }
     public int PageNumber { get; }
-    public MemoryStream ImageData { get; }
-
-    public DownloadedImage(string filename, int pageNumber, MemoryStream imageData) {
-      Filename = filename;
-      PageNumber = pageNumber;
-      ImageData = imageData;
-    }
-
-    public void Dispose() {
-      ImageData.Dispose();
-    }
-  }
-
-  public class DownloadedImageVoldy : IDisposable {
-    public string Filename { get; }
-    public int PageNumber { get; }
     public Stream ImageData{ get; }
     public bool IsOriginal { get; }
 
-    public DownloadedImageVoldy(string filename, int pageNumber, Stream imageData, bool isOriginal) {
+    public DownloadedImage(string filename, int pageNumber, Stream imageData, bool isOriginal) {
       Filename = filename;
       PageNumber = pageNumber;
       ImageData = imageData;
@@ -72,41 +56,11 @@ namespace meguca.Pixiv {
       HttpClient = new HttpClient(HttpClientHandler);
     }
 
-
-    public Dictionary<string, MemoryStream> GetWork(string url) {
-      return GetWork(url, Utils.GetID(url));
-    }
-
-    public Dictionary<string, MemoryStream> GetWork(long id) {
-      return GetWork(Utils.GetWorkURL(id));
-    }
-
-    private Dictionary<string, MemoryStream> GetWork(string url, long id) {
-      if (id <= 0)
-        return new Dictionary<string, MemoryStream>();
-
-      var page = GetPage(url, @"https://pixiv.net");
-      var startJson = page.IndexOf("({token:");
-      var endJson = page.IndexOf("});", startJson);
-      page = page.Substring(startJson + 1, endJson - startJson);
-      var jsonObj = JsonConvert.DeserializeObject<Page>(page);
-
-      if(jsonObj.Preload.Illustration[id].PageCount == 1) {
-        var imageUrl = jsonObj.Preload.Illustration[id].Urls.Original;
-        if(!string.IsNullOrWhiteSpace(imageUrl)) {
-          var dic = new Dictionary<string, MemoryStream>();
-          dic.Add(Path.GetFileName(imageUrl), DownloadToMemory(imageUrl, url));
-          return dic;
-        }
-      }
-      return new Dictionary<string, MemoryStream>();
-    }
-
-    public Illustration GetIllustration(long id) {
+    public async Task<Illustration> GetIllustration(long id) {
       if (id <= 0)
         return null;
 
-      var page = GetPage(Utils.GetWorkURL(id), @"https://pixiv.net");
+      var page = await GetPage(Utils.GetWorkURL(id), @"https://pixiv.net");
       var startJson = page.IndexOf("{\"token\":");
       var endJson = page.IndexOf("}'>", startJson) + 1;
       string headerText = page.Substring(startJson, endJson - startJson);
@@ -124,108 +78,35 @@ namespace meguca.Pixiv {
       return header.Illustration;
     }
 
-    public Dictionary<string, MemoryStream> DownloadIllustration(Illustration illust, int? maxBytes = null) {
-      var ret = new Dictionary<string, MemoryStream>();
+    public async Task<IEnumerable<DownloadedImage>> DownLoadIllistrationAsyncAlternate(Illustration illust, int? maxBytes = null) {
       string workUrl = Utils.GetWorkURL(illust.IllustID);
-      if(illust.IllustType == 2) {
-        //https://www.pixiv.net/ajax/illust/{id}/ugoira_meta
-        string ext = Path.GetExtension(illust.Urls.Original);
-        string pathUgoira = illust.Urls.Original.Replace("img-original", "img-zip-ugoira").Replace($"_ugoira0{ext}", "_ugoira1920x1080.zip");
-        ret.Add(Path.GetFileName(pathUgoira), DownloadToMemory(pathUgoira, workUrl));
-      }
-      else if (illust.PageCount == 1 && !string.IsNullOrWhiteSpace(illust.Urls.Original)) {
-        ret.Add(Path.GetFileName(illust.Urls.Original), DownloadToMemory(illust.Urls.Original, workUrl));
-      }
-      else if(illust.PageCount > 1) {
-        for(int page = 0; page < illust.PageCount; page++) {
-          string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
-          ret.Add(Path.GetFileName(pageUrl), DownloadToMemory(pageUrl, workUrl));
-        }
-      }
-
-      return ret;
-    }
-
-    public void DownloadIllustration(Illustration illust, Action<string, int, MemoryStream> action) {
-      //var ret = new Dictionary<string, MemoryStream>();
-      string workUrl = Utils.GetWorkURL(illust.IllustID);
-      if (illust.IllustType == 2) {
-        //https://www.pixiv.net/ajax/illust/{id}/ugoira_meta
-        string ext = Path.GetExtension(illust.Urls.Original);
-        string pathUgoira = illust.Urls.Original.Replace("img-original", "img-zip-ugoira").Replace($"_ugoira0{ext}", "_ugoira1920x1080.zip");
-        Task t = new Task(() => action(Path.GetFileName(pathUgoira), 0, DownloadToMemory(pathUgoira, workUrl)));
-        t.Start();
-        //ret.Add(Path.GetFileName(pathUgoira), DownloadToMemory(pathUgoira, workUrl));
-      }
-      else if (illust.PageCount == 1 && !string.IsNullOrWhiteSpace(illust.Urls.Original)) {
-        Task t = new Task(() => action(Path.GetFileName(illust.Urls.Original), 0, DownloadToMemory(illust.Urls.Original, workUrl)));
-        t.Start();
-        //ret.Add(Path.GetFileName(illust.Urls.Original), DownloadToMemory(illust.Urls.Original, workUrl));
-      }
-      else if (illust.PageCount > 1) {
-        for (int page = 0; page < illust.PageCount; page++) {
-          string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
-          Task t = new Task(() => action(Path.GetFileName(pageUrl), page, DownloadToMemory(pageUrl, workUrl)));
-          t.Start();
-        }
-      }
-      //return ret;
-    }
-
-    public async Task<IEnumerable<DownloadedImage>> DownLoadIllistrationTestAsync(Illustration illust) {
-      string workUrl = Utils.GetWorkURL(illust.IllustID);
-      if (!string.IsNullOrWhiteSpace(illust.Urls.Original)) {
+      if (!string.IsNullOrWhiteSpace(illust.Urls.Original) || illust.IllustType == 2) {
         var tasks = new List<Task<DownloadedImage>>();
         for (int page = 0; page < illust.PageCount; page++) {
           string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
-          tasks.Add(DownloadToMemoryTest(pageUrl, workUrl, Path.GetFileName(pageUrl), page));
+          tasks.Add(DownloadToMemoryAsync(illust, workUrl, page, maxBytes));
         }
         return await Task.WhenAll(tasks);
       }
       else
-        return null;
+        return await Task.FromResult(Enumerable.Empty<DownloadedImage>());
     }
 
-    public async Task<IEnumerable<DownloadedImageVoldy>> DownLoadIllistrationVoldyAsync(Illustration illust, int? maxBytes = null) {
-      string workUrl = Utils.GetWorkURL(illust.IllustID);
-      if (!string.IsNullOrWhiteSpace(illust.Urls.Original)) {
-        var tasks = new List<Task<DownloadedImageVoldy>>();
-        for (int page = 0; page < illust.PageCount; page++) {
-          string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
-          tasks.Add(DownloadToMemoryVoldy(illust, workUrl, page, maxBytes));
-        }
-        return await Task.WhenAll(tasks);
-      }
-      else
-        return await Task.FromResult(Enumerable.Empty<DownloadedImageVoldy>());
-    }
-
-    public IEnumerable<Task<DownloadedImageVoldy>> DownLoadIllistrationVoldyAsyncImproved(Illustration illust, int? maxBytes = null) {
+    public IEnumerable<Task<DownloadedImage>> DownLoadIllistrationAsync(Illustration illust, int? maxBytes = null) {
       var workUrl = Utils.GetWorkURL(illust.IllustID);
-      if (string.IsNullOrWhiteSpace(illust.Urls.Original))
-        return Enumerable.Empty<Task<DownloadedImageVoldy>>();
+      if (string.IsNullOrWhiteSpace(illust.Urls.Original) || illust.IllustType == 2)
+        return Enumerable.Empty<Task<DownloadedImage>>();
       return Enumerable.Range(0, illust.PageCount)
         .Select((page) => {
           var pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
-          return DownloadToMemoryVoldy(illust, workUrl, page, maxBytes);
+          return DownloadToMemoryAsync(illust, workUrl, page, maxBytes);
         });
     }
 
-    private string GetPage(string url, string referer) {
-      var webRequest = CreatePixivWebRequest(url, referer);
-      string html;
-      using (var reader = new StreamReader(webRequest.GetResponse().GetResponseStream())) {
-        html = reader.ReadToEnd();
-      }
-      return html;
-    }
-
-    private WebRequest CreatePixivWebRequest(string url, string referer) {
-      var webRequest = WebRequest.CreateHttp(url);
-      webRequest.UserAgent = Settings.UserAgent;
-      webRequest.CookieContainer = Cookies;
-      if (referer != null) webRequest.Referer = referer;
-      return webRequest;
+    private async Task<string> GetPage(string url, string referer) {
+      var requestMessage = CreatePixivRequestMessage(url, referer);
+      var response = await HttpClient.SendAsync(requestMessage);
+      return await response.Content.ReadAsStringAsync();
     }
 
     private HttpRequestMessage CreatePixivRequestMessage(string url, string referer) {
@@ -236,35 +117,20 @@ namespace meguca.Pixiv {
     }
 
     private void DownloadFile(string url, string referer, string filename) {
-      var webRequest = CreatePixivWebRequest(url, referer);
-      using (var imageResponse = webRequest.GetResponse()) {
-        using (var fstream = new FileStream(filename, FileMode.Create, FileAccess.Write)) {
-          imageResponse.GetResponseStream().CopyTo(fstream);
-        }
-      }
+
     }
 
-    private MemoryStream DownloadToMemory(string url, string referer) {
-      var webRequest = CreatePixivWebRequest(url, referer);
-      MemoryStream ms = new MemoryStream();
-      using (var imageResponse = webRequest.GetResponse()) {
-        imageResponse.GetResponseStream().CopyTo(ms);
-      }
-      ms.Position = 0;
-      return ms;
-    }
+    private async Task<DownloadedImage> DownloadToMemoryAsync(Illustration illust, string referer, int pageNumber, int? maxBytes = null) {
 
-    private async Task<DownloadedImage> DownloadToMemoryTest(string url, string referer, string fileName, int pageNumber) {
-      var webRequest = CreatePixivWebRequest(url, referer);
-      MemoryStream ms = new MemoryStream();
-      using (var imageResponse = await webRequest.GetResponseAsync()) {
-        imageResponse.GetResponseStream().CopyTo(ms);
-      }
-      ms.Position = 0;
-      return new DownloadedImage(fileName, pageNumber, ms);
-    }
+      #region Commented Ugoira code
+      //if (illust.IllustType == 2) {
+      //  //https://www.pixiv.net/ajax/illust/{id}/ugoira_meta
+      //  string ext = Path.GetExtension(illust.Urls.Original);
+      //  string pathUgoira = illust.Urls.Original.Replace("img-original", "img-zip-ugoira").Replace($"_ugoira0{ext}", "_ugoira1920x1080.zip");
+      //  Task t = new Task(() => action(Path.GetFileName(pathUgoira), 0, DownloadToMemory(pathUgoira, workUrl)));
+      //}
+      #endregion
 
-    private async Task<DownloadedImageVoldy> DownloadToMemoryVoldy(Illustration illust, string referer, int pageNumber, int? maxBytes = null) {
       string url = illust.Urls.Original.Replace("_p0", $"_p{pageNumber}");
       bool isOriginal = true;
       var message = CreatePixivRequestMessage(url, referer);
@@ -278,7 +144,7 @@ namespace meguca.Pixiv {
       }
       string fileName = Path.GetFileName(url);
       var stream = await response.Content.ReadAsStreamAsync();
-      return new DownloadedImageVoldy(fileName, pageNumber, stream, isOriginal);
+      return new DownloadedImage(fileName, pageNumber, stream, isOriginal);
     }
   }
 }

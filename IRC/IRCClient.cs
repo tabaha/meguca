@@ -113,16 +113,20 @@ namespace meguca.IRC {
         if (msgToken.StartsWith(":"))
           msgToken = msgToken.Substring(1);
         if (msgToken.Contains(Pixiv.Utils.WorkPageURL_EN) || msgToken.Contains(Pixiv.Utils.WorkPageURL)) {
-          Dictionary<string, MemoryStream> downloadedImages = new Dictionary<string, MemoryStream>();
           try {
             long id = Pixiv.Utils.GetID(msgToken);
             var channel = DiscordClient.Client.GetChannel(337692280267997196) as IMessageChannel;
-            var illust = PixivDownloader.GetIllustration(id);
-            downloadedImages = PixivDownloader.DownloadIllustration(illust);
-            foreach (var result in downloadedImages) {
-              var response = await channel.SendFileAsync(result.Value, result.Key);
-              foreach (var attach in response.Attachments.Select(a => a.Url))
-                await SendToChannelAsync("#onioniichan", attach);
+            var illust = await PixivDownloader.GetIllustration(id);
+            string tags = illust.Tags.ToString();
+            foreach (var result in PixivDownloader.DownLoadIllistrationAsync(illust, 8388119).ToList()) {
+              using (var image = await result) {
+                string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
+                if (!image.IsOriginal)
+                  text += " (preview version)";
+                var response = await channel.SendFileAsync(image.ImageData, image.Filename, string.IsNullOrEmpty(text) ? null : text.Trim());
+                foreach (var attach in response.Attachments.Select(a => a.Url))
+                  await SendToChannelAsync("#onioniichan", attach);
+              }
             }
           }
           catch (Exception ex) {
@@ -130,9 +134,7 @@ namespace meguca.IRC {
             await SendToChannelAsync("#onioniichan", "Error fetching the image");
           }
           finally {
-            foreach (var ms in downloadedImages.Values)
-              ms.Dispose();
-            downloadedImages.Clear();
+
           }
         }
       }
