@@ -6,8 +6,42 @@ using Newtonsoft.Json;
 using System.Net;
 using meguca.Pixiv.Model;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace meguca.Pixiv {
+
+  public class DownloadedImage : IDisposable {
+    public string Filename { get; }
+    public int PageNumber { get; }
+    public MemoryStream ImageData { get; }
+
+    public DownloadedImage(string filename, int pageNumber, MemoryStream imageData) {
+      Filename = filename;
+      PageNumber = pageNumber;
+      ImageData = imageData;
+    }
+
+    public void Dispose() {
+      ImageData.Dispose();
+    }
+  }
+
+  public class DownloadedImageVoldy : IDisposable {
+    public string Filename { get; }
+    public int PageNumber { get; }
+    public Stream ImageData{ get; }
+
+    public DownloadedImageVoldy(string filename, int pageNumber, Stream imageData) {
+      Filename = filename;
+      PageNumber = pageNumber;
+      ImageData = imageData;
+    }
+
+    public void Dispose() {
+      ImageData.Dispose();
+    }
+  }
+
   class PixivDownloader {
     Settings Settings;
 
@@ -131,6 +165,34 @@ namespace meguca.Pixiv {
       //return ret;
     }
 
+    public async Task<IEnumerable<DownloadedImage>> DownLoadIllistrationTestAsync(Illustration illust) {
+      string workUrl = Utils.GetWorkURL(illust.IllustID);
+      if (!string.IsNullOrWhiteSpace(illust.Urls.Original)) {
+        var tasks = new List<Task<DownloadedImage>>();
+        for (int page = 0; page < illust.PageCount; page++) {
+          string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
+          tasks.Add(DownloadToMemoryTest(pageUrl, workUrl, Path.GetFileName(pageUrl), page));
+        }
+        return await Task.WhenAll(tasks);
+      }
+      else
+        return null;
+    }
+
+    public async Task<IEnumerable<DownloadedImageVoldy>> DownLoadIllistrationVoldyAsync(Illustration illust) {
+      string workUrl = Utils.GetWorkURL(illust.IllustID);
+      if (!string.IsNullOrWhiteSpace(illust.Urls.Original)) {
+        var tasks = new List<Task<DownloadedImageVoldy>>();
+        for (int page = 0; page < illust.PageCount; page++) {
+          string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
+          tasks.Add(DownloadToMemoryVoldy(pageUrl, workUrl, Path.GetFileName(pageUrl), page));
+        }
+        return await Task.WhenAll(tasks);
+      }
+      else
+        return await Task.FromResult(Enumerable.Empty<DownloadedImageVoldy>());
+    }
+
     private string GetPage(string url, string referer) {
       var webRequest = CreatePixivWebRequest(url, referer);
       string html;
@@ -167,6 +229,21 @@ namespace meguca.Pixiv {
       return ms;
     }
 
+    private async Task<DownloadedImage> DownloadToMemoryTest(string url, string referer, string fileName, int pageNumber) {
+      var webRequest = CreatePixivWebRequest(url, referer);
+      MemoryStream ms = new MemoryStream();
+      using (var imageResponse = await webRequest.GetResponseAsync()) {
+        imageResponse.GetResponseStream().CopyTo(ms);
+      }
+      ms.Position = 0;
+      return new DownloadedImage(fileName, pageNumber, ms);
+    }
 
+    private async Task<DownloadedImageVoldy> DownloadToMemoryVoldy(string url, string referer, string fileName, int pageNumber) {
+      var webRequest = CreatePixivWebRequest(url, referer);
+      var response = await webRequest.GetResponseAsync();
+      var stream = response.GetResponseStream();
+      return new DownloadedImageVoldy(fileName, pageNumber, stream);
+    }
   }
 }

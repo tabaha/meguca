@@ -65,20 +65,38 @@ namespace meguca.DiscordMeguca {
             downloadedImages.Clear();
           }
         }
-        //else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsP) && msg.Content.StartsWith("!ppixiv")) {
-        //  try {
-        //    long id = Pixiv.Utils.GetID(msg.Content);
-        //    var illust = PixivDownloader.GetIllustration(id);
-        //    string tags = illust.Tags.ToString();
-        //    PixivDownloader.DownloadIllustration(illust, async (s, i, ms) => { await msg.Channel.SendFileAsync(ms, s, i == 0 ? $"Tags: {tags}" : null); ms.Dispose(); });
-        //  }
-        //  catch (Exception ex) {
-        //    Console.WriteLine(ex.Message);
-        //  }
-        //  finally {
+        else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsP) && msg.Content.StartsWith("!ppixiv")) {
+          try {
+            long id = Pixiv.Utils.GetID(msg.Content);
+            var illust = PixivDownloader.GetIllustration(id);
+            string tags = illust.Tags.ToString();
+            foreach(var image in await PixivDownloader.DownLoadIllistrationTestAsync(illust)) {
+              var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
+            }
+          }
+          catch (Exception ex) {
+            Console.WriteLine(ex.Message);
+          }
+          finally {
 
-        //  }
-        //}
+          }
+        }
+        else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsPP) && msg.Content.StartsWith("!pppixiv")) {
+          try {
+            long id = Pixiv.Utils.GetID(msg.Content);
+            var illust = PixivDownloader.GetIllustration(id);
+            string tags = illust.Tags.ToString();
+            foreach (var image in await PixivDownloader.DownLoadIllistrationVoldyAsync(illust)) {
+              var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
+            }
+          }
+          catch (Exception ex) {
+            Console.WriteLine(ex.Message);
+          }
+          finally {
+
+          }
+        }
       }
     }
 
