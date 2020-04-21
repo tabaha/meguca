@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 
 namespace meguca.DiscordMeguca.Uploader {
   public class LocalUploader : IUploader {
-    public string BaseUrl { get; }
-    public string Directory { get; }
+    public string BaseUrl { get; set; }
+    public string Directory { get; set; }
 
     public async Task<RestUserMessage> SendImage(SocketMessage originalMessage, DownloadedImage image, string additionalText) {
       string filename = Directory + image.Filename;
@@ -20,7 +20,7 @@ namespace meguca.DiscordMeguca.Uploader {
         }
       }
       if (File.Exists(filename)) {
-        return await originalMessage.Channel.SendMessageAsync(filename + (!string.IsNullOrEmpty(additionalText) ? $" [{additionalText}]" : string.Empty));
+        return await originalMessage.Channel.SendMessageAsync(BaseUrl + image.Filename + (!string.IsNullOrEmpty(additionalText) ? $" [{additionalText}]" : string.Empty));
       }
       else
         return await new Task<RestUserMessage>(() => null);

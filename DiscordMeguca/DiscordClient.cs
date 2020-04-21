@@ -32,7 +32,7 @@ namespace meguca.DiscordMeguca {
     public DiscordClient() {
       Settings = new DiscordSettings();
       Client = new DiscordSocketClient();
-      Uploader = new DiscordUploader();
+      Uploader = new LocalUploader();
       SetupBot();
     }
 
