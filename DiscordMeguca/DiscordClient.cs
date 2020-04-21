@@ -10,6 +10,7 @@ using meguca.Pixiv;
 using System.IO;
 using Newtonsoft.Json;
 using meguca.Pixiv.Model;
+using meguca.DiscordMeguca.Uploader;
 
 namespace meguca.DiscordMeguca {
   class DiscordClient {
@@ -26,11 +27,12 @@ namespace meguca.DiscordMeguca {
     public PixivDownloader PixivDownloader;
     [JsonIgnore()]
     public Dictionary<ulong, PixivChannelSettings> PixivChannels => Settings.PixivChannels;
+    public IUploader Uploader;
 
     public DiscordClient() {
       Settings = new DiscordSettings();
       Client = new DiscordSocketClient();
-
+      Uploader = new DiscordUploader();
       SetupBot();
     }
 
@@ -43,7 +45,6 @@ namespace meguca.DiscordMeguca {
       if (!string.IsNullOrWhiteSpace(msg.Content)) {
 
         if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettings) && (msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || msg.Content.StartsWith("!pixiv"))) {
-          Dictionary<string, MemoryStream> downloadedImages = new Dictionary<string, MemoryStream>();
           try {
             long id = Pixiv.Utils.GetID(msg.Content);
             var illust = await PixivDownloader.GetIllustration(id);
@@ -60,12 +61,16 @@ namespace meguca.DiscordMeguca {
                 if (!image.IsOriginal)
                   text += " (preview version)";
                 Console.WriteLine($"Sending page {image.PageNumber}");
-                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, string.IsNullOrEmpty(text) ? null : text.Trim());
+                var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text.Trim());
               }
             }
           }
           catch (Exception ex) {
+            Console.WriteLine(ex);
+            Console.WriteLine("------------------------");
             Console.WriteLine(ex.Message);
+            Console.WriteLine("------------------------");
+            Console.WriteLine(ex.StackTrace);
           }
           finally {
 
@@ -82,7 +87,10 @@ namespace meguca.DiscordMeguca {
             string tags = illust.Tags.ToString();
             foreach (var image in await PixivDownloader.DownLoadIllistrationAsyncAlternate(illust)) {
               try {
-                var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, image.PageNumber == 0 ? $"Tags: {tags}" : null);
+                string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
+                if (!image.IsOriginal)
+                  text += " (preview version)";
+                var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text.Trim());
               }
               catch (Exception ex) {
                 Console.WriteLine(ex.Message);
