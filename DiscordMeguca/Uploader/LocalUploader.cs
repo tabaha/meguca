@@ -12,6 +12,8 @@ namespace meguca.DiscordMeguca.Uploader {
     public string BaseUrl { get; set; }
     public string Directory { get; set; }
 
+    public int? MaxBytes => null;
+
     public async Task<RestUserMessage> SendImage(SocketMessage originalMessage, DownloadedImage image, string additionalText) {
       string filename = Directory + image.Filename;
       if (image.ImageData != null && !File.Exists(filename)) {

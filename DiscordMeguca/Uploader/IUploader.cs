@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace meguca.DiscordMeguca.Uploader {
   public interface IUploader {
+    int? MaxBytes { get; }
     Task<RestUserMessage> SendImage(SocketMessage originalMessage, DownloadedImage image, string additionalText);
   }
 }

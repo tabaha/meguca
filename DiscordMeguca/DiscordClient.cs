@@ -54,7 +54,7 @@ namespace meguca.DiscordMeguca {
               return;
             }
             string tags = illust.Tags.ToString();
-            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, MaxUploadBytes).ToList()) {
+            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, Uploader.MaxBytes).ToList()) {
               using (var image = await imageTask) {
                 Console.WriteLine($"Got page {image.PageNumber}");
                 string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
