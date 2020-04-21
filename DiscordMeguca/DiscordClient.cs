@@ -47,6 +47,7 @@ namespace meguca.DiscordMeguca {
           try {
             long id = Pixiv.Utils.GetID(msg.Content);
             var illust = await PixivDownloader.GetIllustration(id);
+            Console.WriteLine("Finished getting illust data");
             if((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G )) {
               Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
               return;
@@ -54,9 +55,11 @@ namespace meguca.DiscordMeguca {
             string tags = illust.Tags.ToString();
             foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, MaxUploadBytes).ToList()) {
               using (var image = await imageTask) {
+                Console.WriteLine($"Got page {image.PageNumber}");
                 string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
                 if (!image.IsOriginal)
                   text += " (preview version)";
+                Console.WriteLine($"Sending page {image.PageNumber}");
                 var response = await msg.Channel.SendFileAsync(image.ImageData, image.Filename, string.IsNullOrEmpty(text) ? null : text.Trim());
               }
             }

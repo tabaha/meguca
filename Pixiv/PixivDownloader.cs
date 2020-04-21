@@ -83,7 +83,6 @@ namespace meguca.Pixiv {
       if (!string.IsNullOrWhiteSpace(illust.Urls.Original) || illust.IllustType == 2) {
         var tasks = new List<Task<DownloadedImage>>();
         for (int page = 0; page < illust.PageCount; page++) {
-          string pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
           tasks.Add(DownloadToMemoryAsync(illust, workUrl, page, maxBytes));
         }
         return await Task.WhenAll(tasks);
@@ -98,7 +97,6 @@ namespace meguca.Pixiv {
         return Enumerable.Empty<Task<DownloadedImage>>();
       return Enumerable.Range(0, illust.PageCount)
         .Select((page) => {
-          var pageUrl = illust.Urls.Original.Replace("_p0", $"_p{page}");
           return DownloadToMemoryAsync(illust, workUrl, page, maxBytes);
         });
     }
