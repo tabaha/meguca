@@ -28,11 +28,13 @@ namespace meguca.DiscordMeguca {
     [JsonIgnore()]
     public Dictionary<ulong, PixivChannelSettings> PixivChannels => Settings.PixivChannels;
     public IUploader Uploader;
+    public LocalUploader LocalUploader;
 
     public DiscordClient() {
       Settings = new DiscordSettings();
       Client = new DiscordSocketClient();
-      Uploader = new LocalUploader();
+      Uploader = new DiscordUploader();
+      LocalUploader = new LocalUploader();
       SetupBot();
     }
 
