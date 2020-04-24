@@ -60,7 +60,7 @@ namespace meguca.DiscordMeguca {
               using (var image = await imageTask) {
                 Console.WriteLine($"Got page {image.PageNumber}");
                 string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
-                if (image.PageNumber == 0 && channelPixivSettings.MaxPages.HasValue && channelPixivSettings.MaxPages > illust.PageCount)
+                if (image.PageNumber == 0 && channelPixivSettings.MaxPages.HasValue && illust.PageCount > channelPixivSettings.MaxPages)
                   text += $"[Showing {channelPixivSettings.MaxPages} images out of {illust.PageCount}]";
                 if (!image.IsOriginal)
                   text += " (preview version)";
@@ -92,7 +92,7 @@ namespace meguca.DiscordMeguca {
             foreach (var image in await PixivDownloader.DownLoadIllistrationAsyncAlternate(illust, Uploader.MaxBytes, channelPixivSettings.MaxPages)) {
               try {
                 string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
-                if (image.PageNumber == 0 && channelPixivSettings.MaxPages.HasValue && channelPixivSettings.MaxPages > illust.PageCount)
+                if (image.PageNumber == 0 && channelPixivSettings.MaxPages.HasValue && illust.PageCount > channelPixivSettings.MaxPages)
                   text += $"[Showing {channelPixivSettings.MaxPages} images out of {illust.PageCount}]";
                 if (!image.IsOriginal)
                   text += " (preview version)";
