@@ -38,22 +38,27 @@ namespace meguca.IRC.Commands {
     }
 
     private string GetUrlTitle(string url) {
-      var request = WebRequest.CreateHttp(url);
-      string html;
-      using (var reader = new StreamReader(request.GetResponse().GetResponseStream())) {
-        html = reader.ReadToEnd();
+      try {
+        var request = WebRequest.CreateHttp(url);
+        string html;
+        using (var reader = new StreamReader(request.GetResponse().GetResponseStream())) {
+          html = reader.ReadToEnd();
+        }
+        int start = html.IndexOf("<title>");
+        int end = html.IndexOf("</title>", start == -1 ? 0 : start);
+
+        string title = null;
+        if (start != -1 && end != -1)
+          title = html.Substring(start + 7, (end) - (start + 7));
+
+        if (!string.IsNullOrEmpty(title))
+          title = WebUtility.HtmlDecode(title).Replace(Environment.NewLine, "; ").Replace("\n", "; ");
+
+        return title;
       }
-      int start = html.IndexOf("<title>");
-      int end = html.IndexOf("</title>", start == -1 ? 0 : start);
-
-      string title = null;
-      if (start != -1 && end != -1)
-        title = html.Substring(start + 7, (end) - (start + 7));
-
-      if (!string.IsNullOrEmpty(title))
-        title = WebUtility.HtmlDecode(title).Replace(Environment.NewLine, "; ").Replace("\n", "; ");
-
-      return title;
+      catch (Exception) {
+        return "Error retrieving site info";
+      }
     }
 
   }
