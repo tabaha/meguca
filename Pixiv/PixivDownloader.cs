@@ -78,10 +78,11 @@ namespace meguca.Pixiv {
       return header.Illustration;
     }
 
-    public async Task<IEnumerable<DownloadedImage>> DownLoadIllistrationAsyncAlternate(Illustration illust, int? maxBytes = null) {
+    public async Task<IEnumerable<DownloadedImage>> DownLoadIllistrationAsyncAlternate(Illustration illust, int? maxBytes = null, int? maxPages = null) {
       string workUrl = Utils.GetWorkURL(illust.IllustID);
       if (!string.IsNullOrWhiteSpace(illust.Urls.Original) || illust.IllustType == 2) {
         var tasks = new List<Task<DownloadedImage>>();
+        int numPages = maxPages.HasValue ? Math.Min(maxPages.Value, illust.PageCount) : illust.PageCount;
         for (int page = 0; page < illust.PageCount; page++) {
           tasks.Add(DownloadToMemoryAsync(illust, workUrl, page, maxBytes));
         }
@@ -91,11 +92,11 @@ namespace meguca.Pixiv {
         return await Task.FromResult(Enumerable.Empty<DownloadedImage>());
     }
 
-    public IEnumerable<Task<DownloadedImage>> DownLoadIllistrationAsync(Illustration illust, int? maxBytes = null) {
+    public IEnumerable<Task<DownloadedImage>> DownLoadIllistrationAsync(Illustration illust, int? maxBytes = null, int? maxPages = null) {
       var workUrl = Utils.GetWorkURL(illust.IllustID);
       if (string.IsNullOrWhiteSpace(illust.Urls.Original) || illust.IllustType == 2)
         return Enumerable.Empty<Task<DownloadedImage>>();
-      return Enumerable.Range(0, illust.PageCount)
+      return Enumerable.Range(0, maxPages.HasValue? Math.Min(maxPages.Value, illust.PageCount) : illust.PageCount)
         .Select((page) => {
           return DownloadToMemoryAsync(illust, workUrl, page, maxBytes);
         });

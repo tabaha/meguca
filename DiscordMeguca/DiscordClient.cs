@@ -56,10 +56,12 @@ namespace meguca.DiscordMeguca {
               return;
             }
             string tags = illust.Tags.ToString();
-            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, Uploader.MaxBytes).ToList()) {
+            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, Uploader.MaxBytes, channelPixivSettings.MaxPages).ToList()) {
               using (var image = await imageTask) {
                 Console.WriteLine($"Got page {image.PageNumber}");
                 string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
+                if (image.PageNumber == 0 && channelPixivSettings.MaxPages.HasValue && channelPixivSettings.MaxPages > illust.PageCount)
+                  text += $"[Showing {channelPixivSettings.MaxPages} images out of {illust.PageCount}]";
                 if (!image.IsOriginal)
                   text += " (preview version)";
                 Console.WriteLine($"Sending page {image.PageNumber}");
@@ -87,9 +89,11 @@ namespace meguca.DiscordMeguca {
               return;
             }
             string tags = illust.Tags.ToString();
-            foreach (var image in await PixivDownloader.DownLoadIllistrationAsyncAlternate(illust)) {
+            foreach (var image in await PixivDownloader.DownLoadIllistrationAsyncAlternate(illust, Uploader.MaxBytes, channelPixivSettings.MaxPages)) {
               try {
                 string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
+                if (image.PageNumber == 0 && channelPixivSettings.MaxPages.HasValue && channelPixivSettings.MaxPages > illust.PageCount)
+                  text += $"[Showing {channelPixivSettings.MaxPages} images out of {illust.PageCount}]";
                 if (!image.IsOriginal)
                   text += " (preview version)";
                 var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text.Trim());
