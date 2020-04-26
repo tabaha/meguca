@@ -52,7 +52,7 @@ namespace meguca.IRC.Commands {
           title = html.Substring(start + 7, (end) - (start + 7));
 
         if (!string.IsNullOrEmpty(title))
-          title = WebUtility.HtmlDecode(title).Replace(Environment.NewLine, "; ").Replace("\n", "; ");
+          title = WebUtility.HtmlDecode(title).Trim().Replace(Environment.NewLine, "; ").Replace("\n", "; ");
 
         return title;
       }
