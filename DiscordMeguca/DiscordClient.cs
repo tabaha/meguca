@@ -59,7 +59,7 @@ namespace meguca.DiscordMeguca {
             #region -p parameter (specify pages to download)
             int flagStart = msg.Content.IndexOf("-p ");
             int flagEnd = -1;
-            if(flagStart != -1) {
+            if (flagStart != -1) {
               flagStart += 3;
               flagEnd = msg.Content.IndexOf("-", flagStart);
               if (flagEnd == -1)
@@ -67,15 +67,17 @@ namespace meguca.DiscordMeguca {
               pagesToDownload = msg.Content.Substring(flagStart, flagEnd - flagStart).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
                                            .Select(p => int.TryParse(p.Trim(), out var pageNumber) && pageNumber >= 0 && pageNumber < illust.PageCount ? pageNumber : -1).Where(p => p > -1);
             }
+            else
+              pagesToDownload = Enumerable.Range(0, illust.PageCount);
             #endregion
 
             string tags = illust.Tags.ToString();
             bool isFirstSent = true;
-            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, pageNumbers: pagesToDownload ,maxPages: channelPixivSettings.MaxPages, maxBytes: Uploader.MaxBytes).ToList()) {
+            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, pageNumbers: pagesToDownload, maxPages: channelPixivSettings.MaxPages, maxBytes: Uploader.MaxBytes).ToList()) {
               using (var image = await imageTask) {
                 string text = isFirstSent ? $"Tags: {tags}" : string.Empty;
-                if (isFirstSent && channelPixivSettings.MaxPages.HasValue && illust.PageCount > channelPixivSettings.MaxPages)
-                  text += $" [Showing {channelPixivSettings.MaxPages} images out of {illust.PageCount}]";
+                if (isFirstSent && channelPixivSettings.MaxPages.HasValue && pagesToDownload.Count() > channelPixivSettings.MaxPages)
+                  text += $" [Showing {channelPixivSettings.MaxPages} images out of {pagesToDownload.Count()}]";
                 if (!image.IsOriginal)
                   text += " (preview version)";
                 text = text.Trim();
