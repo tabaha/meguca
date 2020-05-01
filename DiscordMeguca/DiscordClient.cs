@@ -65,7 +65,7 @@ namespace meguca.DiscordMeguca {
               if (flagEnd == -1)
                 flagEnd = msg.Content.Length;
               pagesToDownload = msg.Content.Substring(flagStart, flagEnd - flagStart).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-                                           .Select(p => int.TryParse(p.Trim(), out var pageNumber) && pageNumber >= 0 && pageNumber <= illust.PageCount ? pageNumber : -1).Where(p => p > -1);
+                                           .Select(p => int.TryParse(p.Trim(), out var pageNumber) && pageNumber >= 0 && pageNumber < illust.PageCount ? pageNumber : -1).Where(p => p > -1);
             }
             #endregion
 
