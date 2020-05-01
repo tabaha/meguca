@@ -50,64 +50,45 @@ namespace meguca.DiscordMeguca {
           try {
             long id = Pixiv.Utils.GetID(msg.Content);
             var illust = await PixivDownloader.GetIllustration(id);
-            Console.WriteLine("Finished getting illust data");
             if((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G )) {
               Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
               return;
             }
+
+            IEnumerable<int> pagesToDownload = null;
+            #region -p parameter (specify pages to download)
+            int flagStart = msg.Content.IndexOf("-p ");
+            int flagEnd = -1;
+            if(flagStart != -1) {
+              flagStart += 3;
+              flagEnd = msg.Content.IndexOf("-", flagStart);
+              if (flagEnd == -1)
+                flagEnd = msg.Content.Length;
+              pagesToDownload = msg.Content.Substring(flagStart, flagEnd - flagStart).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                           .Select(p => int.TryParse(p.Trim(), out var pageNumber) && pageNumber >= 0 && pageNumber <= illust.PageCount ? pageNumber : -1).Where(p => p > -1);
+            }
+            #endregion
+
             string tags = illust.Tags.ToString();
-            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, Uploader.MaxBytes, channelPixivSettings.MaxPages).ToList()) {
+            bool isFirstSent = true;
+            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, pageNumbers: pagesToDownload ,maxPages: channelPixivSettings.MaxPages, maxBytes: Uploader.MaxBytes).ToList()) {
               using (var image = await imageTask) {
-                Console.WriteLine($"Got page {image.PageNumber}");
-                string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
-                if (image.PageNumber == 0 && channelPixivSettings.MaxPages.HasValue && illust.PageCount > channelPixivSettings.MaxPages)
-                  text += $"[Showing {channelPixivSettings.MaxPages} images out of {illust.PageCount}]";
+                string text = isFirstSent ? $"Tags: {tags}" : string.Empty;
+                if (isFirstSent && channelPixivSettings.MaxPages.HasValue && illust.PageCount > channelPixivSettings.MaxPages)
+                  text += $" [Showing {channelPixivSettings.MaxPages} images out of {illust.PageCount}]";
                 if (!image.IsOriginal)
                   text += " (preview version)";
+                text = text.Trim();
+                isFirstSent = false;
                 Console.WriteLine($"Sending page {image.PageNumber}");
-                var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text.Trim());
+                var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text);
               }
             }
           }
           catch (Exception ex) {
             Console.WriteLine(ex);
             Console.WriteLine("------------------------");
-            Console.WriteLine(ex.Message);
-            Console.WriteLine("------------------------");
             Console.WriteLine(ex.StackTrace);
-          }
-          finally {
-
-          }
-        }
-        else if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettingsPP) && msg.Content.StartsWith("!ppixiv")) {
-          try {
-            long id = Pixiv.Utils.GetID(msg.Content);
-            var illust = await PixivDownloader.GetIllustration(id);
-            if ((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G)) {
-              Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
-              return;
-            }
-            string tags = illust.Tags.ToString();
-            foreach (var image in await PixivDownloader.DownLoadIllistrationAsyncAlternate(illust, Uploader.MaxBytes, channelPixivSettings.MaxPages)) {
-              try {
-                string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
-                if (image.PageNumber == 0 && channelPixivSettings.MaxPages.HasValue && illust.PageCount > channelPixivSettings.MaxPages)
-                  text += $"[Showing {channelPixivSettings.MaxPages} images out of {illust.PageCount}]";
-                if (!image.IsOriginal)
-                  text += " (preview version)";
-                var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text.Trim());
-              }
-              catch (Exception ex) {
-                Console.WriteLine(ex.Message);
-              }
-              finally {
-                image.Dispose();
-              }
-            }
-          }
-          catch (Exception ex) {
-            Console.WriteLine(ex.Message);
           }
           finally {
 

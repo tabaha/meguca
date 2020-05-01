@@ -118,7 +118,7 @@ namespace meguca.IRC {
             var channel = DiscordClient.Client.GetChannel(337692280267997196) as IMessageChannel;
             var illust = await PixivDownloader.GetIllustration(id);
             string tags = illust.Tags.ToString();
-            foreach (var result in PixivDownloader.DownLoadIllistrationAsync(illust, 8388119).ToList()) {
+            foreach (var result in PixivDownloader.DownLoadIllistrationAsync(illust, maxBytes: 8388119).ToList()) {
               using (var image = await result) {
                 string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
                 if (!image.IsOriginal)
