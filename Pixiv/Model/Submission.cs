@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using System.Linq;
 
 namespace meguca.Pixiv.Model {
-  class Page {
+  class Submission {
     #region Properties
     public string Token;
     public Services Services;

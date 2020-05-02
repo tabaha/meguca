@@ -57,5 +57,10 @@ namespace meguca.Pixiv.Model {
     public bool IsSFW => XRestrict == 0;
     public bool IsR18 => XRestrict > 0;
     public bool IsR18G => XRestrict == 2;
+
+    public override string ToString() {
+      string str = string.IsNullOrEmpty(IllustTitle) ? string.Empty : $"**Title:** {IllustTitle ?? string.Empty}   ";
+      return str + $"**Artist:** {UserName}   **Tags:** {Tags.ToString()}";
+    }
   }
 }

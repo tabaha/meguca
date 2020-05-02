@@ -71,11 +71,12 @@ namespace meguca.DiscordMeguca {
               pagesToDownload = Enumerable.Range(0, illust.PageCount);
             #endregion
 
-            string tags = illust.Tags.ToString();
+            //Maybe consider getting the Page object and doing Page.User.Name instead of this
+            //string submissionInfo = $"**Title:** {illust.IllustTitle ?? string.Empty}    //    **Artist:** {illust.UserName}    //    **Tags:** {illust.Tags.ToString()}";
             bool isFirstSent = true;
             foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, pageNumbers: pagesToDownload, maxPages: channelPixivSettings.MaxPages, maxBytes: Uploader.MaxBytes).ToList()) {
               using (var image = await imageTask) {
-                string text = isFirstSent ? $"Tags: {tags}" : string.Empty;
+                string text = isFirstSent ? illust.ToString() : string.Empty;
                 if (isFirstSent && channelPixivSettings.MaxPages.HasValue && pagesToDownload.Count() > channelPixivSettings.MaxPages)
                   text += $" [Showing {channelPixivSettings.MaxPages} images out of {pagesToDownload.Count()}]";
                 if (!image.IsOriginal)

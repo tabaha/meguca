@@ -64,7 +64,7 @@ namespace meguca.Pixiv {
       var startJson = page.IndexOf("{\"token\":");
       var endJson = page.IndexOf("}'>", startJson) + 1;
       string headerText = page.Substring(startJson, endJson - startJson);
-      var header = JsonConvert.DeserializeObject<Page>(headerText);
+      var header = JsonConvert.DeserializeObject<Submission>(headerText);
 
       startJson = page.IndexOf("content='", endJson) + "content='".Length;
       endJson = page.IndexOf("}'>", startJson) + 1;
