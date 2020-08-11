@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -11,6 +12,11 @@ namespace meguca.Pixiv {
     //private static string BigMangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=";
     //private static string MangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga&illust_id=";
 
+    public static string ArtistPageURL = @"https://www.pixiv.net/users/";
+    public static string ArtistPageURL_EN = @"https://www.pixiv.net/en/users/";
+
+    private static string UserProfileService = "https://www.pixiv.net/ajax/user/{0}/profile/top?lang=en";
+
     #region REGEX
     private static string SingleWorkLocationExpression = @"https?://i.pximg.net/img-original/img/\d+/\d+/\d+/\d+/\d+/\d+/\d+_p\d+.(?<extension>\w+)";
     private static string WorkThumbnailExpression = @"https?://i.pximg.net/c/150x150/img-master/img/\d+/\d+/\d+/\d+/\d+/\d+/(?<pixivid>\d+)(_p0)?_master1200.(?<extension>\w+)";
@@ -19,6 +25,7 @@ namespace meguca.Pixiv {
     private static string MultiplePagesNumberExpression = @"<li>Multiple images: (?<numPages>\d+)P</li>";
 
     public static string WorkIDExpression = @"\d+";
+    public static string ArtistIDExpression = @"\d+";
 
     //public static Regex SingleWorkLocationRegex = new Regex(SingleWorkLocationExpression);
     //public static Regex WorkThumbnailRegex = new Regex(WorkThumbnailExpression);
@@ -27,11 +34,14 @@ namespace meguca.Pixiv {
     //public static Regex MultiplePagesNumberRegex = new Regex(MultiplePagesNumberExpression);
 
     public static Regex WorkIDRegex = new Regex(WorkIDExpression);
+    public static Regex ArtistIDRegex = new Regex(ArtistIDExpression);
     #endregion
 
-    public static string GetWorkURL(long id) {
-      return WorkPageURL_EN + id;
-    }
+    public static string GetWorkUrl(long id) => WorkPageURL_EN + id;
+
+    public static string GetArtistUrl(long id) => ArtistPageURL_EN + id;
+
+    public static string GetArtistProfileServiceURL(long id) => string.Format(UserProfileService, id);
 
     //public static string GetBookmarkNewIllustURL(int page) {
     //  return BookmarkNewIllustURL + page;
@@ -47,6 +57,11 @@ namespace meguca.Pixiv {
 
     public static long GetID(string url) {
       var m = WorkIDRegex.Match(url);
+      return (m.Success && long.TryParse(m.Value, out var result)) ? result : -1;
+    }
+
+    public static long GetArtistID(string url) {
+      var m = ArtistIDRegex.Match(url);
       return (m.Success && long.TryParse(m.Value, out var result)) ? result : -1;
     }
   }

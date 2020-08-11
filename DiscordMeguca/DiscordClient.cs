@@ -46,57 +46,80 @@ namespace meguca.DiscordMeguca {
     private async Task PixivCommand(SocketMessage msg) {
       if (!string.IsNullOrWhiteSpace(msg.Content)) {
 
-        if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettings) && (msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || msg.Content.StartsWith("!pixiv"))) {
-          try {
-            long id = Pixiv.Utils.GetID(msg.Content);
-            var illust = await PixivDownloader.GetIllustration(id);
-            if((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G )) {
-              Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
-              return;
-            }
+        if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettings)) {
+          if (msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || msg.Content.StartsWith("!pixiv")) {
+            try {
+              long id = Pixiv.Utils.GetID(msg.Content);
+              var illust = await PixivDownloader.GetIllustration(id);
+              if ((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G)) {
+                Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
+                return;
+              }
 
-            IEnumerable<int> pagesToDownload = null;
-            #region -p parameter (specify pages to download)
-            int flagStart = msg.Content.IndexOf("-p ");
-            int flagEnd = -1;
-            if (flagStart != -1) {
-              flagStart += 3;
-              flagEnd = msg.Content.IndexOf("-", flagStart);
-              if (flagEnd == -1)
-                flagEnd = msg.Content.Length;
-              pagesToDownload = msg.Content.Substring(flagStart, flagEnd - flagStart).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-                                           .Select(p => int.TryParse(p.Trim(), out var pageNumber) && pageNumber >= 0 && pageNumber < illust.PageCount ? pageNumber : -1).Where(p => p > -1);
-            }
-            else
-              pagesToDownload = Enumerable.Range(0, illust.PageCount);
-            #endregion
+              IEnumerable<int> pagesToDownload = null;
+              #region -p parameter (specify pages to download)
+              int flagStart = msg.Content.IndexOf("-p ");
+              int flagEnd = -1;
+              if (flagStart != -1) {
+                flagStart += 3;
+                flagEnd = msg.Content.IndexOf("-", flagStart);
+                if (flagEnd == -1)
+                  flagEnd = msg.Content.Length;
+                pagesToDownload = msg.Content.Substring(flagStart, flagEnd - flagStart).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                             .Select(p => int.TryParse(p.Trim(), out var pageNumber) && pageNumber >= 0 && pageNumber < illust.PageCount ? pageNumber : -1).Where(p => p > -1);
+              }
+              else
+                pagesToDownload = Enumerable.Range(0, illust.PageCount);
+              #endregion
 
-            //Maybe consider getting the Page object and doing Page.User.Name instead of this
-            //string submissionInfo = $"**Title:** {illust.IllustTitle ?? string.Empty}    //    **Artist:** {illust.UserName}    //    **Tags:** {illust.Tags.ToString()}";
-            bool isFirstSent = true;
-            foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, pageNumbers: pagesToDownload, maxPages: channelPixivSettings.MaxPages, maxBytes: Uploader.MaxBytes).ToList()) {
-              using (var image = await imageTask) {
-                string text = isFirstSent ? illust.ToString() : string.Empty;
-                if (isFirstSent && channelPixivSettings.MaxPages.HasValue && pagesToDownload.Count() > channelPixivSettings.MaxPages)
-                  text += $" [Showing {channelPixivSettings.MaxPages} images out of {pagesToDownload.Count()}]";
-                if (!image.IsOriginal)
-                  text += " (preview version)";
-                text = text.Trim();
-                isFirstSent = false;
-                Console.WriteLine($"Sending page {image.PageNumber}");
-                var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text);
+              //Maybe consider getting the Page object and doing Page.User.Name instead of this
+              //string submissionInfo = $"**Title:** {illust.IllustTitle ?? string.Empty}    //    **Artist:** {illust.UserName}    //    **Tags:** {illust.Tags.ToString()}";
+              bool isFirstSent = true;
+              foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, pageNumbers: pagesToDownload, maxPages: channelPixivSettings.MaxPages, maxBytes: Uploader.MaxBytes).ToList()) {
+                using (var image = await imageTask) {
+                  string text = isFirstSent ? illust.ToString() : string.Empty;
+                  if (isFirstSent && channelPixivSettings.MaxPages.HasValue && pagesToDownload.Count() > channelPixivSettings.MaxPages)
+                    text += $" [Showing {channelPixivSettings.MaxPages} images out of {pagesToDownload.Count()}]";
+                  if (!image.IsOriginal)
+                    text += " (preview version)";
+                  text = text.Trim();
+                  isFirstSent = false;
+                  Console.WriteLine($"Sending page {image.PageNumber}");
+                  var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text);
+                }
               }
             }
-          }
-          catch (Exception ex) {
-            Console.WriteLine(ex);
-            Console.WriteLine("------------------------");
-            Console.WriteLine(ex.StackTrace);
-          }
-          finally {
+            catch (Exception ex) {
+              Console.WriteLine(ex);
+              Console.WriteLine("------------------------");
+              Console.WriteLine(ex.StackTrace);
+            }
+            finally {
 
+            }
+          }
+          else if ((msg.Content.StartsWith("<" + Pixiv.Utils.ArtistPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.ArtistPageURL)) && channelPixivSettings.AllowR18) {
+            try {
+              long id = Pixiv.Utils.GetArtistID(msg.Content);
+              var info = PixivDownloader.GetArtistProfile(id);
+              Func<MiniIllustInfo, string> description = illust => illust.Alt + (illust.PageCount > 1 ? "   " + illust.PageCount + " pages" : string.Empty) + "   (<" + Utils.GetWorkUrl(illust.Id) + ">)";
+              foreach (var imageTask in PixivDownloader.DownLoadThumbnailsArtistProfileAsync(info, description, maxPages: 5)) {
+                using (var image = await imageTask) {
+                  var response = await Uploader.SendImage(msg, image, image.Descritpion);
+                }
+              }
+            }
+            catch (Exception ex) {
+              Console.WriteLine(ex);
+              Console.WriteLine("------------------------");
+              Console.WriteLine(ex.StackTrace);
+            }
+            finally {
+
+            }
           }
         }
+
       }
     }
 

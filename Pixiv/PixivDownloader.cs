@@ -18,11 +18,14 @@ namespace meguca.Pixiv {
     public Stream ImageData{ get; }
     public bool IsOriginal { get; }
 
-    public DownloadedImage(string filename, int pageNumber, Stream imageData, bool isOriginal) {
+    public string Descritpion { get; }
+
+    public DownloadedImage(string filename, int pageNumber, Stream imageData, bool isOriginal, string description = null) {
       Filename = filename;
       PageNumber = pageNumber;
       ImageData = imageData;
       IsOriginal = isOriginal;
+      Descritpion = description;
     }
 
     public void Dispose() {
@@ -60,7 +63,7 @@ namespace meguca.Pixiv {
       if (id <= 0)
         return null;
 
-      var page = await GetPage(Utils.GetWorkURL(id), @"https://pixiv.net");
+      var page = await GetPage(Utils.GetWorkUrl(id), @"https://pixiv.net");
       var startJson = page.IndexOf("{\"token\":");
       var endJson = page.IndexOf("}'>", startJson) + 1;
       string headerText = page.Substring(startJson, endJson - startJson);
@@ -76,6 +79,19 @@ namespace meguca.Pixiv {
 
 
       return header.Illustration;
+    }
+
+    public ArtistProfile GetArtistProfile(long id) {
+      if (id <= 0)
+        return null; ;
+
+      var page = GetPage(Utils.GetArtistProfileServiceURL(id), Utils.GetArtistUrl(id)).Result;
+      var result = JsonConvert.DeserializeObject<ArtistProfilePage>(page);
+
+      if(result?.ArtistProfile != null)
+        result.ArtistProfile.Id = id;
+
+      return result?.ArtistProfile;
     }
 
     //public async Task<IEnumerable<DownloadedImage>> DownLoadIllistrationAsyncAlternate(Illustration illust, int? maxBytes = null, int? maxPages = null) {
@@ -98,12 +114,28 @@ namespace meguca.Pixiv {
       if (maxPages.HasValue)
         pageNumbers = pageNumbers.Take(maxPages.Value);
 
-      var workUrl = Utils.GetWorkURL(illust.IllustID);
+      var workUrl = Utils.GetWorkUrl(illust.IllustID);
       if (string.IsNullOrWhiteSpace(illust.Urls.Original) || illust.IllustType == 2)
         return Enumerable.Empty<Task<DownloadedImage>>();
       return pageNumbers
         .Select((page) => {
           return DownloadToMemoryAsync(illust, workUrl, page, maxBytes);
+        });
+    }
+
+    public IEnumerable<Task<DownloadedImage>> DownLoadThumbnailsArtistProfileAsync(ArtistProfile artistProfile, Func<MiniIllustInfo, string> description, IEnumerable<int> thumbnailNumbers = null, int? maxPages = null) {
+      if (thumbnailNumbers == null)
+        thumbnailNumbers = Enumerable.Range(0, artistProfile.Illustrations.Count);
+      if (maxPages.HasValue)
+        thumbnailNumbers = thumbnailNumbers.Take(maxPages.Value);
+
+      var artistUrl = artistProfile.Url;
+      if (!thumbnailNumbers.Any())
+        return Enumerable.Empty<Task<DownloadedImage>>();
+
+      return thumbnailNumbers
+        .Select((page) => {
+          return DownloadToMemoryAsync(artistProfile.Illustrations.ElementAt(page).Value, artistUrl, description); //please fix this code
         });
     }
 
@@ -149,6 +181,17 @@ namespace meguca.Pixiv {
       string fileName = Path.GetFileName(url);
       var stream = await response.Content.ReadAsStreamAsync();
       return new DownloadedImage(fileName, pageNumber, stream, isOriginal);
+    }
+
+    private async Task<DownloadedImage> DownloadToMemoryAsync(MiniIllustInfo illust, string referer, Func<MiniIllustInfo, string> description) {
+
+      string url = illust.Url;
+      bool isOriginal = false;
+      var message = CreatePixivRequestMessage(url, referer);
+      var response = await HttpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead);
+      string fileName = Path.GetFileName(url);
+      var stream = await response.Content.ReadAsStreamAsync();
+      return new DownloadedImage(fileName, 0, stream, isOriginal, description(illust));
     }
   }
 }
