@@ -8,30 +8,27 @@ namespace meguca.Pixiv {
   public class Utils {
     public static string WorkPageURL = @"https://www.pixiv.net/artworks/";
     public static string WorkPageURL_EN = @"https://www.pixiv.net/en/artworks/";
-    //private static string BookmarkNewIllustURL = @"https://www.pixiv.net/bookmark_new_illust.php?p=";
-    //private static string BigMangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga_big&illust_id=";
-    //private static string MangaURL = @"https://www.pixiv.net/member_illust.php?mode=manga&illust_id=";
 
     public static string ArtistPageURL = @"https://www.pixiv.net/users/";
     public static string ArtistPageURL_EN = @"https://www.pixiv.net/en/users/";
 
     private static string UserProfileService = "https://www.pixiv.net/ajax/user/{0}/profile/top?lang=en";
+    private static string UserAllImagesService = "https://www.pixiv.net/ajax/user/{0}/profile/all?lang=en";
+
+
+    /// <summary>
+    /// {0} - search term
+    /// {1} - Order. Default = date_d
+    /// {2} - Mode. Default = 2
+    /// {3} - Page. Default = 1. Starts at 1
+    /// {4} - Search Mode? Default = s_tag_full
+    /// {5} - Type. Default = all
+    /// </summary>
+    private static string SearchImageService = "https://www.pixiv.net/ajax/search/artworks/{0}?word={0}&order={1}&mode={2}&p={3}&s_mode={4}&type={5}&lang=en";
 
     #region REGEX
-    private static string SingleWorkLocationExpression = @"https?://i.pximg.net/img-original/img/\d+/\d+/\d+/\d+/\d+/\d+/\d+_p\d+.(?<extension>\w+)";
-    private static string WorkThumbnailExpression = @"https?://i.pximg.net/c/150x150/img-master/img/\d+/\d+/\d+/\d+/\d+/\d+/(?<pixivid>\d+)(_p0)?_master1200.(?<extension>\w+)";
-    private static string WorkPageExpression = "class=\"image-item\"><a href=\"/member_illust.php\\?mode=medium&amp;illust_id=(?<pixivid>\\d+)";
-    private static string WorkTypeExpression = @"member_illust.php\?mode=(?<type>(big|manga|ugoira_view))&amp;illust_id=";
-    private static string MultiplePagesNumberExpression = @"<li>Multiple images: (?<numPages>\d+)P</li>";
-
     public static string WorkIDExpression = @"\d+";
     public static string ArtistIDExpression = @"\d+";
-
-    //public static Regex SingleWorkLocationRegex = new Regex(SingleWorkLocationExpression);
-    //public static Regex WorkThumbnailRegex = new Regex(WorkThumbnailExpression);
-    //public static Regex WorkPageRegex = new Regex(WorkPageExpression);
-    //public static Regex WorkTypeRegex = new Regex(WorkTypeExpression);
-    //public static Regex MultiplePagesNumberRegex = new Regex(MultiplePagesNumberExpression);
 
     public static Regex WorkIDRegex = new Regex(WorkIDExpression);
     public static Regex ArtistIDRegex = new Regex(ArtistIDExpression);
@@ -43,17 +40,7 @@ namespace meguca.Pixiv {
 
     public static string GetArtistProfileServiceURL(long id) => string.Format(UserProfileService, id);
 
-    //public static string GetBookmarkNewIllustURL(int page) {
-    //  return BookmarkNewIllustURL + page;
-    //}
-
-    //public static string GetBigMangaURL(long id, int pageNumber) {
-    //  return BigMangaURL + id + "&page=" + pageNumber;
-    //}
-
-    //public static string GetMangaURL(long id) {
-    //  return MangaURL + id;
-    //}
+    public static string GetSearchImageServiceUrl(string tag, int page) => string.Format(SearchImageService, tag, "date_d", 2, page, "s_tag_full", "all");
 
     public static long GetID(string url) {
       var m = WorkIDRegex.Match(url);
