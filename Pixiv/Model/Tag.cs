@@ -12,7 +12,7 @@ namespace meguca.Pixiv.Model {
     public long UserId;
     public string Romaji;
     [JsonProperty("translation")]
-    public Translation Translation;
+    public TagTranslation Translation;
     public string Username;
   }
 }

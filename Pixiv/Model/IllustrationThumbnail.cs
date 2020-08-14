@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
 namespace meguca.Pixiv.Model {
-  class MiniIllustInfo {
+  class IllustrationThumbnail {
     public long IllustId;
     public string illustTitle;
     public long Id;
@@ -22,12 +23,15 @@ namespace meguca.Pixiv.Model {
     public int Height;
     public int PageCount;
     public bool IsBookmarkable;
-    public object bookmarkData;
+    public object BookmarkData;
     public string Alt;
     public bool IsAdContainer;
-    public object titleCaptionTranslation; //change!!
+    public object TitleCaptionTranslation; //change!!
     public DateTime CreateDate;
     public DateTime UpdateDate;
     public string ProfileImageUrl;
+
+    [JsonIgnore]
+    public string Referer;
   }
 }

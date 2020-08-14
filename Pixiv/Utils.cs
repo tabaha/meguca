@@ -15,6 +15,8 @@ namespace meguca.Pixiv {
     private static string UserProfileService = "https://www.pixiv.net/ajax/user/{0}/profile/top?lang=en";
     private static string UserAllImagesService = "https://www.pixiv.net/ajax/user/{0}/profile/all?lang=en";
 
+    private static string SearchImageURL_EN = "https://www.pixiv.net/en/tags/{0}/artworks";
+
 
     /// <summary>
     /// {0} - search term
@@ -42,7 +44,9 @@ namespace meguca.Pixiv {
 
     public static string GetSearchImageServiceUrl(string tag, int page) => string.Format(SearchImageService, tag, "date_d", 2, page, "s_tag_full", "all");
 
-    public static long GetID(string url) {
+    public static string GetSearchImageURL(string tag, int page) => string.Format(SearchImageURL_EN, tag) + (page > 1 ? "?p=" + page : string.Empty); //awful, but I don't want to have future issues with detection by always sending ?p=1
+
+    public static long GetWorkID(string url) {
       var m = WorkIDRegex.Match(url);
       return (m.Success && long.TryParse(m.Value, out var result)) ? result : -1;
     }

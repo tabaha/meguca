@@ -81,34 +81,36 @@ namespace meguca.Pixiv {
       return header.Illustration;
     }
 
-    public ArtistProfile GetArtistProfile(long id) {
+    public async Task<ArtistProfile> GetArtistProfile(long id) {
       if (id <= 0)
-        return null; ;
+        return null;
 
-      var page = GetPage(Utils.GetArtistProfileServiceURL(id), Utils.GetArtistUrl(id)).Result;
-      var result = JsonConvert.DeserializeObject<ArtistProfilePage>(page);
+      var page = GetPage(Utils.GetArtistProfileServiceURL(id), Utils.GetArtistUrl(id));
+      var result = JsonConvert.DeserializeObject<ArtistProfilePage>(await page);
 
-      if(result?.ArtistProfile != null)
+      if(result?.ArtistProfile != null) {
         result.ArtistProfile.Id = id;
+        result.ArtistProfile.SetReferer(); 
+      }
 
       return result?.ArtistProfile;
     }
 
-    //public async Task<IEnumerable<DownloadedImage>> DownLoadIllistrationAsyncAlternate(Illustration illust, int? maxBytes = null, int? maxPages = null) {
-    //  string workUrl = Utils.GetWorkURL(illust.IllustID);
-    //  if (!string.IsNullOrWhiteSpace(illust.Urls.Original) || illust.IllustType == 2) {
-    //    var tasks = new List<Task<DownloadedImage>>();
-    //    int numPages = maxPages.HasValue ? Math.Min(maxPages.Value, illust.PageCount) : illust.PageCount;
-    //    for (int page = 0; page < illust.PageCount; page++) {
-    //      tasks.Add(DownloadToMemoryAsync(illust, workUrl, page, maxBytes));
-    //    }
-    //    return await Task.WhenAll(tasks);
-    //  }
-    //  else
-    //    return await Task.FromResult(Enumerable.Empty<DownloadedImage>());
-    //}
+    public async Task<SearchArtwork> GetSearchPage(IEnumerable<string> tags, int pageNumber) {
+      if (!tags.Any() || pageNumber <= 0)
+        return null;
 
-    public IEnumerable<Task<DownloadedImage>> DownLoadIllistrationAsync(Illustration illust, IEnumerable<int> pageNumbers = null, int? maxPages = null, int ? maxBytes = null ) {
+      string serviceUrl = Utils.GetSearchImageServiceUrl(string.Join(" ", tags), pageNumber);
+      string searchPageUrl = Utils.GetSearchImageURL(string.Join(" ", tags), pageNumber);
+      var page = GetPage(serviceUrl, searchPageUrl);
+      var result = JsonConvert.DeserializeObject<SearchArtworkPage>(await page);
+      if (result?.SearchArtwork != null)
+        result.SearchArtwork.Referer = searchPageUrl;
+
+      return result?.SearchArtwork;
+    }
+
+    public IEnumerable<Task<DownloadedImage>> DownloadIllistrationAsync(Illustration illust, IEnumerable<int> pageNumbers = null, int? maxPages = null, int ? maxBytes = null ) {
       if (pageNumbers == null)
         pageNumbers = Enumerable.Range(0, illust.PageCount);
       if (maxPages.HasValue)
@@ -123,7 +125,7 @@ namespace meguca.Pixiv {
         });
     }
 
-    public IEnumerable<Task<DownloadedImage>> DownLoadThumbnailsArtistProfileAsync(ArtistProfile artistProfile, Func<MiniIllustInfo, string> description, IEnumerable<int> thumbnailNumbers = null, int? maxPages = null) {
+    public IEnumerable<Task<DownloadedImage>> DownloadThumbnailsArtistProfileAsync(ArtistProfile artistProfile, Func<IllustrationThumbnail, string> description, IEnumerable<int> thumbnailNumbers = null, int? maxPages = null) {
       if (thumbnailNumbers == null)
         thumbnailNumbers = Enumerable.Range(0, artistProfile.Illustrations.Count);
       if (maxPages.HasValue)
@@ -136,6 +138,13 @@ namespace meguca.Pixiv {
       return thumbnailNumbers
         .Select((page) => {
           return DownloadToMemoryAsync(artistProfile.Illustrations.ElementAt(page).Value, artistUrl, description); //please fix this code
+        });
+    }
+
+    public IEnumerable<Task<DownloadedImage>> DownloadThumbnailsAsync(IEnumerable<IllustrationThumbnail> thumbnails, Func<IllustrationThumbnail, string> description) {
+      return thumbnails
+        .Select(thumbnail => {
+          return DownloadToMemoryAsync(thumbnail, thumbnail.Referer, description); //please fix this code
         });
     }
 
@@ -183,7 +192,7 @@ namespace meguca.Pixiv {
       return new DownloadedImage(fileName, pageNumber, stream, isOriginal);
     }
 
-    private async Task<DownloadedImage> DownloadToMemoryAsync(MiniIllustInfo illust, string referer, Func<MiniIllustInfo, string> description) {
+    private async Task<DownloadedImage> DownloadToMemoryAsync(IllustrationThumbnail illust, string referer, Func<IllustrationThumbnail, string> description) {
 
       string url = illust.Url;
       bool isOriginal = false;

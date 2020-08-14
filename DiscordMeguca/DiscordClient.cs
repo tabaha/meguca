@@ -49,7 +49,7 @@ namespace meguca.DiscordMeguca {
         if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettings)) {
           if (msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || msg.Content.StartsWith("!pixiv")) {
             try {
-              long id = Pixiv.Utils.GetID(msg.Content);
+              long id = Pixiv.Utils.GetWorkID(msg.Content);
               var illust = await PixivDownloader.GetIllustration(id);
               if ((illust.IsR18 && !channelPixivSettings.AllowR18) || (illust.IsR18G && !channelPixivSettings.AllowR18G)) {
                 Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
@@ -75,7 +75,7 @@ namespace meguca.DiscordMeguca {
               //Maybe consider getting the Page object and doing Page.User.Name instead of this
               //string submissionInfo = $"**Title:** {illust.IllustTitle ?? string.Empty}    //    **Artist:** {illust.UserName}    //    **Tags:** {illust.Tags.ToString()}";
               bool isFirstSent = true;
-              foreach (var imageTask in PixivDownloader.DownLoadIllistrationAsync(illust, pageNumbers: pagesToDownload, maxPages: channelPixivSettings.MaxPages, maxBytes: Uploader.MaxBytes).ToList()) {
+              foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, pageNumbers: pagesToDownload, maxPages: channelPixivSettings.MaxPages, maxBytes: Uploader.MaxBytes).ToList()) {
                 using (var image = await imageTask) {
                   string text = isFirstSent ? illust.ToString() : string.Empty;
                   if (isFirstSent && channelPixivSettings.MaxPages.HasValue && pagesToDownload.Count() > channelPixivSettings.MaxPages)
@@ -101,9 +101,9 @@ namespace meguca.DiscordMeguca {
           else if ((msg.Content.StartsWith("<" + Pixiv.Utils.ArtistPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.ArtistPageURL)) && channelPixivSettings.AllowR18) {
             try {
               long id = Pixiv.Utils.GetArtistID(msg.Content);
-              var info = PixivDownloader.GetArtistProfile(id);
-              Func<MiniIllustInfo, string> description = illust => illust.Alt + (illust.PageCount > 1 ? "   " + illust.PageCount + " pages" : string.Empty) + "   (<" + Utils.GetWorkUrl(illust.Id) + ">)";
-              foreach (var imageTask in PixivDownloader.DownLoadThumbnailsArtistProfileAsync(info, description, maxPages: 5)) {
+              var info = await PixivDownloader.GetArtistProfile(id);
+              Func<IllustrationThumbnail, string> description = illust => illust.Alt + (illust.PageCount > 1 ? "   " + illust.PageCount + " pages" : string.Empty) + "   (<" + Utils.GetWorkUrl(illust.Id) + ">)";
+              foreach (var imageTask in PixivDownloader.DownloadThumbnailsArtistProfileAsync(info, description, maxPages: 5)) {
                 using (var image = await imageTask) {
                   var response = await Uploader.SendImage(msg, image, image.Descritpion);
                 }
@@ -116,6 +116,28 @@ namespace meguca.DiscordMeguca {
             }
             finally {
 
+            }
+          }
+          else if (msg.Content.StartsWith(".pixiv search") && channelPixivSettings.AllowR18) {
+            var tags = msg.Content.Replace(".pixiv search", string.Empty).Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries);
+            if (tags.Any()) {
+              try {
+                var results = await PixivDownloader.GetSearchPage(tags, 1);
+                Func<IllustrationThumbnail, string> description = illust => illust.Alt + (illust.PageCount > 1 ? "   " + illust.PageCount + " pages" : string.Empty) + "   (<" + Utils.GetWorkUrl(illust.Id) + ">)";
+                foreach (var imageTask in PixivDownloader.DownloadThumbnailsAsync(results.Results.Illustrations.Take(5), description)) {
+                  using (var image = await imageTask) {
+                    var response = await Uploader.SendImage(msg, image, image.Descritpion);
+                  }
+                }
+              }
+              catch (Exception ex) {
+                Console.WriteLine(ex);
+                Console.WriteLine("------------------------");
+                Console.WriteLine(ex.StackTrace);
+              }
+              finally {
+
+              }
             }
           }
         }

@@ -114,11 +114,11 @@ namespace meguca.IRC {
           msgToken = msgToken.Substring(1);
         if (msgToken.Contains(Pixiv.Utils.WorkPageURL_EN) || msgToken.Contains(Pixiv.Utils.WorkPageURL)) {
           try {
-            long id = Pixiv.Utils.GetID(msgToken);
+            long id = Pixiv.Utils.GetWorkID(msgToken);
             var channel = DiscordClient.Client.GetChannel(337692280267997196) as IMessageChannel;
             var illust = await PixivDownloader.GetIllustration(id);
             string tags = illust.Tags.ToString();
-            foreach (var result in PixivDownloader.DownLoadIllistrationAsync(illust, maxBytes: 8388119).ToList()) {
+            foreach (var result in PixivDownloader.DownloadIllistrationAsync(illust, maxBytes: 8388119).ToList()) {
               using (var image = await result) {
                 string text = image.PageNumber == 0 ? $"Tags: {tags}" : string.Empty;
                 if (!image.IsOriginal)
