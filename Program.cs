@@ -9,6 +9,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.IO;
 using meguca.Pixiv;
+using meguca.Telegram;
 
 namespace meguca {
   class Program {
@@ -18,6 +19,9 @@ namespace meguca {
       PixivDownloader downloader = new PixivDownloader("pixiv.json");
       IRCClient ircClient = JsonConvert.DeserializeObject<IRCClient>(File.ReadAllText("irc.json"));
       ircClient.PixivDownloader = downloader;
+
+      TelegramClient telegramClient = JsonConvert.DeserializeObject<TelegramClient>(File.ReadAllText("telegram.json"));
+      telegramClient.Setup();
 
       DiscordClient discordClient = JsonConvert.DeserializeObject<DiscordClient>(File.ReadAllText("discord.json"));
       discordClient.PixivDownloader = downloader;

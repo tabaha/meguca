@@ -9,11 +9,13 @@ using meguca.Pixiv;
 using System.Collections.Generic;
 using meguca.IRC.Commands;
 using Newtonsoft.Json;
+using System.Net.Security;
 
 namespace meguca.IRC {
   class IRCClient {
 
     private TcpClient IRCTcpClient;
+    private SslStream SslStream;
     private NetworkStream NetworkStream;
     private StreamReader Reader;
     private StreamWriter Writer;
@@ -67,9 +69,11 @@ namespace meguca.IRC {
     public void Connect() {
       try {
         IRCTcpClient = new TcpClient(Settings.Hostname, Settings.Port);
-        NetworkStream = IRCTcpClient.GetStream();
-        Reader = new StreamReader(NetworkStream);
-        Writer = new StreamWriter(NetworkStream) { NewLine = "\r\n", AutoFlush = true };
+        //NetworkStream = IRCTcpClient.GetStream();
+        SslStream = new SslStream(IRCTcpClient.GetStream());
+        SslStream.AuthenticateAsClient(Settings.Hostname);
+        Reader = new StreamReader(SslStream);
+        Writer = new StreamWriter(SslStream) { NewLine = "\r\n", AutoFlush = true };
         Send("USER " + Settings.Username + " meg " + " uca" + " :" + Settings.Realname);
         Send("NICK " + Settings.Nickname);
       }
