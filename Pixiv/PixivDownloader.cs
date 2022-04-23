@@ -50,6 +50,7 @@ namespace meguca.Pixiv {
       }
       else {
         Settings = new Settings() { Cookie = string.Empty, UserAgent = string.Empty, Path = "pixiv/" };
+        File.WriteAllText(settingsPath, JsonConvert.SerializeObject(Settings));
       }
 
       AuthCookie = new Cookie("PHPSESSID", Settings.Cookie, "/", ".pixiv.net");
@@ -57,6 +58,7 @@ namespace meguca.Pixiv {
       Cookies.Add(AuthCookie);
       HttpClientHandler = new HttpClientHandler() { CookieContainer = Cookies };
       HttpClient = new HttpClient(HttpClientHandler);
+      HttpClient.DefaultRequestHeaders.Add("User-Agent", Settings.UserAgent);
     }
 
     public async Task<Illustration> GetIllustration(long id) {
