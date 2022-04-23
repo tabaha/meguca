@@ -11,6 +11,7 @@ namespace meguca.DiscordMeguca {
     public bool AllowR18 { get; set; }
     public bool AllowR18G { get; set; }
     public int? MaxPages { get; set; }
+    public bool AllowNSFWLoli { get; set; }
   }
 
   class DiscordSettings {

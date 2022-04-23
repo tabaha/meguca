@@ -56,7 +56,7 @@ namespace meguca.DiscordMeguca {
                 return;
               }
 
-              if (illust.Tags.TagsCollection.Any(t => t.Translation?.EN.ToLower() == "loli") && !illust.IsSFW)
+              if (CheckRestricted(channelPixivSettings, illust)
                 return;
 
               IEnumerable<int> pagesToDownload = null;
@@ -146,6 +146,10 @@ namespace meguca.DiscordMeguca {
         }
 
       }
+    }
+
+    private bool CheckRestricted(PixivChannelSettings settings, Illustration illust) {
+      return illust.Tags.TagsCollection.Any(t => t.Translation?.EN.ToLower() == "loli") && !illust.IsSFW && !settings.AllowNSFWLoli;
     }
 
     private Task DisplayMessage(SocketMessage msg) {
