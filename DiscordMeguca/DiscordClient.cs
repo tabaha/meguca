@@ -56,6 +56,9 @@ namespace meguca.DiscordMeguca {
                 return;
               }
 
+              if (illust.Tags.TagsCollection.Any(t => t.Translation.EN.ToLower() == "loli") && !illust.IsSFW)
+                return;
+
               IEnumerable<int> pagesToDownload = null;
               #region -p parameter (specify pages to download)
               int flagStart = msg.Content.IndexOf("-p ");
