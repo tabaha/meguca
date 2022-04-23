@@ -56,7 +56,7 @@ namespace meguca.DiscordMeguca {
                 return;
               }
 
-              if (CheckRestricted(channelPixivSettings, illust)
+              if (CheckRestricted(channelPixivSettings, illust))
                 return;
 
               IEnumerable<int> pagesToDownload = null;
