@@ -12,6 +12,7 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using System.IO;
 
 namespace meguca.Telegram {
   class TelegramClient {
@@ -74,21 +75,37 @@ namespace meguca.Telegram {
           long id = Pixiv.Utils.GetWorkID(messageText);
           var illust = await PixivDownloader.GetIllustration(id);
 
+          List<IAlbumInputMedia> items = new List<IAlbumInputMedia>();
 
           bool isFirstSent = true;
-          foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 4, maxBytes: 8388119).ToList()) {
+
+          foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 10, maxBytes: 8388119)) {
             using (var image = await imageTask) {
-              string text = isFirstSent ? illust.ToString() : string.Empty;
-              if (isFirstSent && maxPages > 0 && illust.PageCount > maxPages) ;
-                text += $" [Showing {maxPages} images out of {illust.PageCount}]";
-              if (!image.IsOriginal)
-                text += " (preview version)";
-              text = text.Trim();
+              var ms = new MemoryStream();
+              image.ImageData.CopyTo(ms);
+              ms.Position = 0;
+              items.Add(new InputMediaPhoto(new InputMedia(ms, image.Filename)) { Caption = isFirstSent? illust.ToString() : null});
               isFirstSent = false;
-              Console.WriteLine($"Sending page {image.PageNumber}");
-              await botClient.SendPhotoAsync(chatId, new InputOnlineFile(image.ImageData, image.Filename), string.IsNullOrEmpty(text) ? null : text);
+              //image.ImageData.Position = 0;
             }
           }
+
+          await botClient.SendMediaGroupAsync(chatId, items);
+
+          
+          //foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 4, maxBytes: 8388119).ToList()) {
+          //  using (var image = await imageTask) {
+          //    string text = isFirstSent ? illust.ToString() : string.Empty;
+          //    if (isFirstSent && maxPages > 0 && illust.PageCount > maxPages) ;
+          //      text += $" [Showing {maxPages} images out of {illust.PageCount}]";
+          //    if (!image.IsOriginal)
+          //      text += " (preview version)";
+          //    text = text.Trim();
+          //    isFirstSent = false;
+          //    Console.WriteLine($"Sending page {image.PageNumber}");
+          //    await botClient.SendPhotoAsync(chatId, new InputOnlineFile(image.ImageData, image.Filename), string.IsNullOrEmpty(text) ? null : text);
+          //  }
+          //}
           return;
         }
         catch (Exception ex) { 
