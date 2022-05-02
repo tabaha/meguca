@@ -40,10 +40,19 @@ namespace meguca.DiscordMeguca {
 
     private void SetupBot() {
       Client.MessageReceived += DisplayMessage;
-      Client.MessageReceived += PixivCommand;
+      Client.MessageReceived += PixivMessage;
+      Client.SlashCommandExecuted += SlashCommand;
     }
 
-    private async Task PixivCommand(SocketMessage msg) {
+    private Task SlashCommand(SocketSlashCommand command) {
+
+
+
+      //command.RespondWithFilesAsync()
+      return null;
+    }
+
+    private async Task PixivMessage(SocketMessage msg) {
       if (!string.IsNullOrWhiteSpace(msg.Content)) {
 
         if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettings)) {

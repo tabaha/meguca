@@ -29,7 +29,7 @@ namespace meguca.Telegram {
     public TelegramBotClient TelegramBot { get; set; }
 
     [JsonIgnore]
-    CancellationTokenSource CTS = new CancellationTokenSource();
+    public CancellationTokenSource CTS = new CancellationTokenSource();
 
     public TelegramClient() { }
 
@@ -41,7 +41,7 @@ namespace meguca.Telegram {
       return true;
     }
 
-    public void Run() {
+    public async Task Run() {
       var receiverOptions = new ReceiverOptions {
         AllowedUpdates = { } // receive all update types
       };
@@ -54,6 +54,7 @@ namespace meguca.Telegram {
       Console.ReadLine();
 
       // Send cancellation request to stop bot
+      await Task.Delay(-1);
       CTS.Cancel();
     }
 

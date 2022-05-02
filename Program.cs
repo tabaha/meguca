@@ -21,6 +21,7 @@ namespace meguca {
       ircClient.PixivDownloader = downloader;
 
       TelegramClient telegramClient = JsonConvert.DeserializeObject<TelegramClient>(File.ReadAllText("telegram.json"));
+      telegramClient.PixivDownloader = downloader;
       telegramClient.Setup();
 
       DiscordClient discordClient = JsonConvert.DeserializeObject<DiscordClient>(File.ReadAllText("discord.json"));
@@ -42,10 +43,20 @@ namespace meguca {
 
       var discordRun = new Task( async () => await discordClient.Run());
       discordRun.Start();
+
+      var telegramRun = new Task(async () => await telegramClient.Run());
+      telegramRun.Start();
+
       var tasks = new List<Task>();
       tasks.Add(ircRun);
       tasks.Add(discordRun);
+      tasks.Add(telegramRun);
       Task.WaitAll(tasks.ToArray());
+
+      try {
+        telegramClient.CTS.Cancel();
+      }
+      catch (Exception ex) { }
     }
 
   }
