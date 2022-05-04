@@ -48,7 +48,7 @@ namespace meguca.DiscordMeguca {
     }
 
     private async Task Client_Ready() {
-      //return;
+      return;
       
       var guild = Client.GetGuild(000);
       var guild2 = Client.GetGuild(000);
@@ -76,7 +76,7 @@ namespace meguca.DiscordMeguca {
       if (command.ChannelId.HasValue &&
           command.Data.Options.Count > 0 &&
           PixivChannels.TryGetValue(command.ChannelId.Value, out var channelPixivSettings)) {
-        await command.DeferAsync();
+        await command.DeferAsync(true);
 
 
         try {
@@ -89,7 +89,8 @@ namespace meguca.DiscordMeguca {
                 bool isFirstSent = true;
                 var pagesToDownload = Enumerable.Range(0, illust.PageCount);
                 //var attachments = new List<FileAttachment>();
-                if (illust != null && illust.PageCount > 0) {
+                if (illust != null && illust.PageCount > 0 && CheckRestricted(channelPixivSettings, illust)) {
+
                   await command.DeleteOriginalResponseAsync();
                   foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: channelPixivSettings.MaxPages, maxBytes: MaxUploadBytes)) {
                     using (var image = await imageTask) {
@@ -111,7 +112,7 @@ namespace meguca.DiscordMeguca {
                   }
                 }
                 else
-                  await command.ModifyOriginalResponseAsync(mp => mp.Content = "Error: No images");
+                  await command.ModifyOriginalResponseAsync(mp => mp.Content = "Error");
 
                 //if (attachments.Any()) {
                 //  ////await command.ModifyOriginalResponseAsync(mp => mp.Content = illust.ToString());
@@ -160,8 +161,17 @@ namespace meguca.DiscordMeguca {
       if (!string.IsNullOrWhiteSpace(msg.Content)) {
 
         if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettings)) {
-          if (msg.Content.StartsWith(Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith(Pixiv.Utils.WorkPageURL))
-            await msg.Channel.ModifyMessageAsync(msg.Id, SurpressEmbeds);
+          if (msg.Content.StartsWith(Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith(Pixiv.Utils.WorkPageURL)) {
+            try {
+              await msg.Channel.ModifyMessageAsync(msg.Id, SurpressEmbeds);
+            }
+            catch (Exception ex) {
+              Console.WriteLine(ex);
+              Console.WriteLine("------------------------");
+              Console.WriteLine(ex.StackTrace);
+            }
+
+          }
 
 
           if (msg.Content.StartsWith(Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith(Pixiv.Utils.WorkPageURL) ||
