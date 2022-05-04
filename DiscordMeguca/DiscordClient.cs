@@ -220,6 +220,16 @@ namespace meguca.DiscordMeguca {
                   var response = await Uploader.SendImage(msg, image, string.IsNullOrEmpty(text) ? null : text);
                 }
               }
+
+              //just in case...
+              try {
+                await msg.Channel.ModifyMessageAsync(msg.Id, SurpressEmbeds);
+              }
+              catch (Exception ex) {
+                Console.WriteLine(ex);
+                Console.WriteLine("------------------------");
+                Console.WriteLine(ex.StackTrace);
+              }
             }
             catch (Exception ex) {
               Console.WriteLine(ex);
