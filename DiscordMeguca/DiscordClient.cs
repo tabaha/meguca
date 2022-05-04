@@ -42,21 +42,130 @@ namespace meguca.DiscordMeguca {
       Client.MessageReceived += DisplayMessage;
       Client.MessageReceived += PixivMessage;
       Client.SlashCommandExecuted += SlashCommand;
+
+      Client.Ready += Client_Ready;
+
     }
 
-    private Task SlashCommand(SocketSlashCommand command) {
+    private async Task Client_Ready() {
+      //return;
+      
+      var guild = Client.GetGuild(000);
+      var guild2 = Client.GetGuild(000);
+      // Next, lets create our slash command builder. This is like the embed builder but for slash commands.
+      var guildCommand = new SlashCommandBuilder();
+
+      // Note: Names have to be all lowercase and match the regular expression ^[\w-]{3,32}$
+      guildCommand.WithName("pixiv");
+
+      // Descriptions can have a max length of 100.
+      guildCommand.WithDescription("Pixiv command");
+      guildCommand.AddOption(new SlashCommandOptionBuilder().WithName("id").WithDescription("Pixiv work").WithRequired(false).WithType(ApplicationCommandOptionType.Integer));
+
+      try {
+        var c1 = await guild.CreateApplicationCommandAsync(guildCommand.Build());
+        var c2 = await guild2.CreateApplicationCommandAsync(guildCommand.Build());
+      }
+      catch (Exception exception) {
+        Console.WriteLine(exception.Message + Environment.NewLine + exception.StackTrace);
+      }
+    }
+
+    private async Task SlashCommand(SocketSlashCommand command) {
+
+      if (command.ChannelId.HasValue &&
+          command.Data.Options.Count > 0 &&
+          PixivChannels.TryGetValue(command.ChannelId.Value, out var channelPixivSettings)) {
+        await command.DeferAsync();
 
 
+        try {
+          var param = command.Data.Options.FirstOrDefault();
+          if (param != null && param.Value != null) {
+            switch (param.Name) {
+              case "id":
 
-      //command.RespondWithFilesAsync()
-      return null;
+                var illust = await PixivDownloader.GetIllustration((long)param.Value);
+                bool isFirstSent = true;
+                var pagesToDownload = Enumerable.Range(0, illust.PageCount);
+                //var attachments = new List<FileAttachment>();
+                if (illust != null && illust.PageCount > 0) {
+                  await command.DeleteOriginalResponseAsync();
+                  foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: channelPixivSettings.MaxPages, maxBytes: MaxUploadBytes)) {
+                    using (var image = await imageTask) {
+                      string text = isFirstSent ? illust.ToString() : string.Empty;
+                      if (isFirstSent && channelPixivSettings.MaxPages.HasValue && pagesToDownload.Count() > channelPixivSettings.MaxPages)
+                        text += $" [Showing {channelPixivSettings.MaxPages} images out of {pagesToDownload.Count()}]";
+                      if (!image.IsOriginal)
+                        text += " (preview version)";
+                      text = text.Trim();
+                      isFirstSent = false;
+                      Console.WriteLine($"Sending page {image.PageNumber}");
+                      await Uploader.SendImage(command.Channel, image, string.IsNullOrEmpty(text) ? null : text);
+                      //command.Channel.SendFileAsync(image.ImageData, )
+                      //var ms = new MemoryStream();
+                      //image.ImageData.CopyTo(ms);
+                      //ms.Position = 0;
+                      //attachments.Add(new FileAttachment(ms, image.Filename));
+                    }
+                  }
+                }
+                else
+                  await command.ModifyOriginalResponseAsync(mp => mp.Content = "Error: No images");
+
+                //if (attachments.Any()) {
+                //  ////await command.ModifyOriginalResponseAsync(mp => mp.Content = illust.ToString());
+                //  //await command.DeleteOriginalResponseAsync();
+                //  ////await command.FollowupWithFilesAsync(attachments);
+                //  ////await command.RespondWithFilesAsync(attachments, text: illust.ToString());
+                //}
+                //else
+                  
+
+                break;
+              case "artist":
+
+                break;
+
+              case "search":
+
+                break;
+              default:
+                await command.ModifyOriginalResponseAsync(mp => mp.Content = "Error: Invalid Command");
+                break;
+            }
+          }
+        }
+        catch (Exception ex) {
+          Console.WriteLine(ex.Message + Environment.NewLine + ex.StackTrace);
+          await command.ModifyOriginalResponseAsync(mp => mp.Content = "Error");
+        }
+
+      }
+      else
+        await command.RespondAsync("Invalid Comment", ephemeral: true); ;
+
+      return;
+    }
+
+    private void SurpressEmbeds(MessageProperties messageProperties) {
+      if (!messageProperties.Flags.IsSpecified) {
+        messageProperties.Flags = MessageFlags.SuppressEmbeds;
+      }
+      else
+        messageProperties.Flags = messageProperties.Flags.Value | MessageFlags.SuppressEmbeds;
     }
 
     private async Task PixivMessage(SocketMessage msg) {
       if (!string.IsNullOrWhiteSpace(msg.Content)) {
 
         if (PixivChannels.TryGetValue(msg.Channel.Id, out var channelPixivSettings)) {
-          if (msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || msg.Content.StartsWith("!pixiv")) {
+          if (msg.Content.StartsWith(Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith(Pixiv.Utils.WorkPageURL))
+            await msg.Channel.ModifyMessageAsync(msg.Id, SurpressEmbeds);
+
+
+          if (msg.Content.StartsWith(Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith(Pixiv.Utils.WorkPageURL) ||
+              msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || msg.Content.StartsWith("<" + Pixiv.Utils.WorkPageURL) || msg.Content.StartsWith("!pixiv")) {
             try {
               long id = Pixiv.Utils.GetWorkID(msg.Content);
               var illust = await PixivDownloader.GetIllustration(id);
@@ -64,6 +173,7 @@ namespace meguca.DiscordMeguca {
                 Console.WriteLine($"Channel does not allow {(illust.IsR18G ? "R18G" : "R18")} images");
                 return;
               }
+              
 
               if (CheckRestricted(channelPixivSettings, illust))
                 return;
