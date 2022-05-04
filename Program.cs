@@ -53,10 +53,10 @@ namespace meguca {
       tasks.Add(telegramRun);
       Task.WaitAll(tasks.ToArray());
 
-      try {
-        telegramClient.CTS.Cancel();
-      }
-      catch (Exception ex) { }
+      //try {
+      //  telegramClient.CTS.Cancel();
+      //}
+      //catch (Exception ex) { }
     }
 
   }

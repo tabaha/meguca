@@ -51,11 +51,11 @@ namespace meguca.Telegram {
           receiverOptions,
           cancellationToken: CTS.Token);
 
-      Console.ReadLine();
+      //Console.ReadLine();
 
       // Send cancellation request to stop bot
       await Task.Delay(-1);
-      CTS.Cancel();
+     // CTS.Cancel();
     }
 
     async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) {
