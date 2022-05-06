@@ -76,7 +76,7 @@ namespace meguca.DiscordMeguca {
       if (command.ChannelId.HasValue &&
           command.Data.Options.Count > 0 &&
           PixivChannels.TryGetValue(command.ChannelId.Value, out var channelPixivSettings)) {
-        await command.DeferAsync(true);
+        await command.DeferAsync();
 
 
         try {
@@ -89,7 +89,7 @@ namespace meguca.DiscordMeguca {
                 bool isFirstSent = true;
                 var pagesToDownload = Enumerable.Range(0, illust.PageCount);
                 //var attachments = new List<FileAttachment>();
-                if (illust != null && illust.PageCount > 0 && CheckRestricted(channelPixivSettings, illust)) {
+                if (illust != null && illust.PageCount > 0 && !CheckRestricted(channelPixivSettings, illust)) {
 
                   await command.DeleteOriginalResponseAsync();
                   foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: channelPixivSettings.MaxPages, maxBytes: MaxUploadBytes)) {
@@ -289,6 +289,7 @@ namespace meguca.DiscordMeguca {
 
     private bool CheckRestricted(PixivChannelSettings settings, Illustration illust) {
       return illust.Tags.TagsCollection.Any(t => t.Translation?.EN.ToLower() == "loli") && !illust.IsSFW && !settings.AllowNSFWLoli;
+      //return illust.Tags.TagsCollection.Any(t => t.Translation?.EN.ToLower() == "loli") ? !illust.IsSFW && !settings.AllowNSFWLoli : false;
     }
 
     private Task DisplayMessage(SocketMessage msg) {
