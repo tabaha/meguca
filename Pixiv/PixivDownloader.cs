@@ -65,18 +65,25 @@ namespace meguca.Pixiv {
       if (id <= 0)
         return null;
 
+      Submission header;
       var page = await GetPage(Utils.GetWorkUrl(id), @"https://pixiv.net");
-      var startJson = page.IndexOf("{\"token\":");
-      var endJson = page.IndexOf("}'>", startJson) + 1;
-      string headerText = page.Substring(startJson, endJson - startJson);
-      var header = JsonConvert.DeserializeObject<Submission>(headerText);
+      try {
+        var startJson = page.IndexOf("{\"token\":");
+        var endJson = page.IndexOf("}'>", startJson) + 1;
+        string headerText = page.Substring(startJson, endJson - startJson);
+        header = JsonConvert.DeserializeObject<Submission>(headerText);
 
-      startJson = page.IndexOf("content='", endJson) + "content='".Length;
-      endJson = page.IndexOf("}'>", startJson) + 1;
-      string preloadText = page.Substring(startJson, endJson - startJson);
+        startJson = page.IndexOf("content='", endJson) + "content='".Length;
+        endJson = page.IndexOf("}'>", startJson) + 1;
+        string preloadText = page.Substring(startJson, endJson - startJson);
 
-      var preload = JsonConvert.DeserializeObject<Preload>(preloadText);
-      header.Preload = preload;
+        var preload = JsonConvert.DeserializeObject<Preload>(preloadText);
+        header.Preload = preload;
+      }
+      catch (Exception ex) {
+        Console.WriteLine(page);
+        throw;
+      }
 
 
 
