@@ -165,7 +165,7 @@ namespace meguca.Pixiv {
 
     private HttpRequestMessage CreatePixivRequestMessage(string url, string referer) {
       var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, url);
-      httpRequestMessage.Version = new Version(2, 0);
+      //httpRequestMessage.Version = new Version(2, 0);
       if (!string.IsNullOrEmpty(referer))
         httpRequestMessage.Headers.Referrer = new Uri(referer);
       return httpRequestMessage;
