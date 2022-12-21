@@ -159,6 +159,7 @@ namespace meguca.Pixiv {
 
     private async Task<string> GetPage(string url, string referer) {
       var requestMessage = CreatePixivRequestMessage(url, referer);
+      Console.WriteLine($"GET {url}");
       var response = await HttpClient.SendAsync(requestMessage);
       return await response.Content.ReadAsStringAsync();
     }
