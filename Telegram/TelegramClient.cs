@@ -91,7 +91,7 @@ namespace meguca.Telegram {
             }
           }
 
-          await botClient.SendMediaGroupAsync(chatId, items, disableNotification: false , protectContent: !illust.IsSFW);
+          await botClient.SendMediaGroupAsync(chatId, items, disableNotification: false , protectContent: true);
 
           
           //foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 4, maxBytes: 8388119).ToList()) {
