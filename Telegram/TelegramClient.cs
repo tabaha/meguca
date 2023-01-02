@@ -82,27 +82,11 @@ namespace meguca.Telegram {
 
       int maxPages = 4;
 
-      if (messageText.StartsWith("/pixiv")) {
+      if (messageText.StartsWith("/pixiv") || messageText.StartsWith(Utils.WorkPageURL_EN) || messageText.StartsWith(Pixiv.Utils.WorkPageURL) ||
+              messageText.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || messageText.StartsWith("<" + Pixiv.Utils.WorkPageURL) || messageText.StartsWith("!pixiv")) {
         try {
           long id = Pixiv.Utils.GetWorkID(messageText);
-          var illust = await PixivDownloader.GetIllustration(id);
-
-          List<IAlbumInputMedia> items = new List<IAlbumInputMedia>();
-
-          bool isFirstSent = true;
-
-          foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 10, maxBytes: 8388119)) {
-            using (var image = await imageTask) {
-              var ms = new MemoryStream();
-              image.ImageData.CopyTo(ms);
-              ms.Position = 0;
-              items.Add(new InputMediaPhotoSpoiler(new InputMedia(ms, image.Filename)) { Caption = isFirstSent ? illust.ToString() : null });
-              isFirstSent = false;
-              //image.ImageData.Position = 0;
-            }
-          }
-
-          await botClient.SendMediaGroupAsync(chatId, items, disableNotification: false);
+          await SendIllustration(botClient, chatId, id);
 
 
           //foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 4, maxBytes: 8388119).ToList()) {
@@ -124,7 +108,8 @@ namespace meguca.Telegram {
         }
       }
 
-      Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
+
+          Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
 
       // Echo received message text
       //Message sentMessage = await botClient.SendTextMessageAsync(
@@ -132,6 +117,28 @@ namespace meguca.Telegram {
       //    text: "You said:\n" + messageText,
       //    cancellationToken: cancellationToken);
 
+    }
+
+    private async Task SendIllustration(ITelegramBotClient botClient, long chatId, long id) {
+      var illust = await PixivDownloader.GetIllustration(id);
+
+      List<IAlbumInputMedia> items = new List<IAlbumInputMedia>();
+
+      bool isFirstSent = true;
+
+      foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 10, maxBytes: 8388119)) {
+        using (var image = await imageTask) {
+          Console.WriteLine($"Downloading page {image.PageNumber}");
+          var ms = new MemoryStream();
+          image.ImageData.CopyTo(ms);
+          ms.Position = 0;
+          items.Add(new InputMediaPhotoSpoiler(new InputMedia(ms, image.Filename)) { Caption = isFirstSent ? illust.ToString() : null });
+          isFirstSent = false;
+          //image.ImageData.Position = 0;
+        }
+      }
+
+      await botClient.SendMediaGroupAsync(chatId, items, disableNotification: true);
     }
 
     Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken) {
