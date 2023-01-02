@@ -102,7 +102,7 @@ namespace meguca.Telegram {
             }
           }
 
-          await botClient.SendMediaGroupAsync(chatId, items, disableNotification: false, );
+          await botClient.SendMediaGroupAsync(chatId, items, disableNotification: false);
 
 
           //foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 4, maxBytes: 8388119).ToList()) {
