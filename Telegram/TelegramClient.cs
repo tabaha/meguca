@@ -13,8 +13,19 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using System.IO;
 using Telegram.Bot.Polling;
+using Newtonsoft.Json;
 
 namespace meguca.Telegram {
+
+  public class InputMediaPhotoSpoiler : InputMediaPhoto {
+
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public bool? HasSpoiler { get; set; }
+    public InputMediaPhotoSpoiler(InputMedia media) : base(media) {
+      HasSpoiler = true;
+    }
+  }
+
   class TelegramClient {
 
     public string Token { get; set; }
@@ -36,7 +47,7 @@ namespace meguca.Telegram {
     public bool Setup() {
       TelegramBot = new TelegramBotClient(Token);
 
-      
+
 
       return true;
     }
@@ -55,7 +66,7 @@ namespace meguca.Telegram {
 
       // Send cancellation request to stop bot
       await Task.Delay(-1);
-     // CTS.Cancel();
+      // CTS.Cancel();
     }
 
     async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) {
@@ -85,15 +96,15 @@ namespace meguca.Telegram {
               var ms = new MemoryStream();
               image.ImageData.CopyTo(ms);
               ms.Position = 0;
-              items.Add(new InputMediaPhoto(new InputMedia(ms, image.Filename)) { Caption = isFirstSent? illust.ToString() : null});
+              items.Add(new InputMediaPhotoSpoiler(new InputMedia(ms, image.Filename)) { Caption = isFirstSent ? illust.ToString() : null });
               isFirstSent = false;
               //image.ImageData.Position = 0;
             }
           }
 
-          await botClient.SendMediaGroupAsync(chatId, items, disableNotification: false , protectContent: true);
+          await botClient.SendMediaGroupAsync(chatId, items, disableNotification: false, );
 
-          
+
           //foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 4, maxBytes: 8388119).ToList()) {
           //  using (var image = await imageTask) {
           //    string text = isFirstSent ? illust.ToString() : string.Empty;
@@ -109,7 +120,7 @@ namespace meguca.Telegram {
           //}
           return;
         }
-        catch (Exception ex) { 
+        catch (Exception ex) {
         }
       }
 
