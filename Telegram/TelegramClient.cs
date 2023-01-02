@@ -85,6 +85,13 @@ namespace meguca.Telegram {
       if (messageText.StartsWith("/pixiv") || messageText.StartsWith(Utils.WorkPageURL_EN) || messageText.StartsWith(Pixiv.Utils.WorkPageURL) ||
               messageText.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || messageText.StartsWith("<" + Pixiv.Utils.WorkPageURL) || messageText.StartsWith("!pixiv")) {
         try {
+          try {
+            await botClient.EditMessageTextAsync(update.Message.Chat.Id, update.Message.MessageId, messageText, disableWebPagePreview: true);
+          }
+          catch (Exception ex) {
+
+            Console.WriteLine(ex);
+          }
           long id = Pixiv.Utils.GetWorkID(messageText);
           await SendIllustration(botClient, chatId, id);
 
