@@ -9,10 +9,10 @@ using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Exceptions;
-using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using System.IO;
+using Telegram.Bot.Polling;
 
 namespace meguca.Telegram {
   class TelegramClient {
@@ -91,7 +91,7 @@ namespace meguca.Telegram {
             }
           }
 
-          await botClient.SendMediaGroupAsync(chatId, items);
+          await botClient.SendMediaGroupAsync(chatId, items, disableNotification: false , protectContent: !illust.IsSFW);
 
           
           //foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 4, maxBytes: 8388119).ToList()) {
