@@ -80,35 +80,12 @@ namespace meguca.Telegram {
       var chatId = update.Message.Chat.Id;
       var messageText = update.Message.Text;
 
-      int maxPages = 4;
-
       if (messageText.StartsWith("/pixiv") || messageText.StartsWith(Utils.WorkPageURL_EN) || messageText.StartsWith(Pixiv.Utils.WorkPageURL) ||
               messageText.StartsWith("<" + Pixiv.Utils.WorkPageURL_EN) || messageText.StartsWith("<" + Pixiv.Utils.WorkPageURL) || messageText.StartsWith("!pixiv")) {
         try {
-          //try {
-          //  await botClient.EditMessageTextAsync(update.Message.Chat.Id, update.Message.MessageId, messageText, disableWebPagePreview: true);
-          //}
-          //catch (Exception ex) {
 
-          //  Console.WriteLine(ex);
-          //}
           long id = Pixiv.Utils.GetWorkID(messageText);
           await SendIllustration(botClient, chatId, id);
-
-
-          //foreach (var imageTask in PixivDownloader.DownloadIllistrationAsync(illust, maxPages: 4, maxBytes: 8388119).ToList()) {
-          //  using (var image = await imageTask) {
-          //    string text = isFirstSent ? illust.ToString() : string.Empty;
-          //    if (isFirstSent && maxPages > 0 && illust.PageCount > maxPages) ;
-          //      text += $" [Showing {maxPages} images out of {illust.PageCount}]";
-          //    if (!image.IsOriginal)
-          //      text += " (preview version)";
-          //    text = text.Trim();
-          //    isFirstSent = false;
-          //    Console.WriteLine($"Sending page {image.PageNumber}");
-          //    await botClient.SendPhotoAsync(chatId, new InputOnlineFile(image.ImageData, image.Filename), string.IsNullOrEmpty(text) ? null : text);
-          //  }
-          //}
           return;
         }
         catch (Exception ex) {
@@ -116,7 +93,7 @@ namespace meguca.Telegram {
       }
 
 
-          Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
+      Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
 
       // Echo received message text
       //Message sentMessage = await botClient.SendTextMessageAsync(
@@ -139,7 +116,7 @@ namespace meguca.Telegram {
           var ms = new MemoryStream();
           image.ImageData.CopyTo(ms);
           ms.Position = 0;
-          items.Add(new InputMediaPhotoSpoiler(new InputMedia(ms, image.Filename)) { Caption = isFirstSent ? illust.ToString() : null });
+          items.Add(new InputMediaPhotoSpoiler(new InputMedia(ms, image.Filename)) { Caption = isFirstSent ? Pixiv.Utils.GetWorkUrl(id) + "   " + illust.ToString() : null, ParseMode = ParseMode.MarkdownV2});
           isFirstSent = false;
           //image.ImageData.Position = 0;
         }
