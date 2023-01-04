@@ -89,6 +89,7 @@ namespace meguca.Telegram {
           return;
         }
         catch (Exception ex) {
+          Console.WriteLine(ex.ToString());
         }
       }
 
