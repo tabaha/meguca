@@ -117,7 +117,7 @@ namespace meguca.Telegram {
           var ms = new MemoryStream();
           image.ImageData.CopyTo(ms);
           ms.Position = 0;
-          items.Add(new InputMediaPhotoSpoiler(new InputMedia(ms, image.Filename)) { Caption = isFirstSent ? Pixiv.Utils.GetWorkUrl(id) + "   " + illust.ToString() : null, ParseMode = ParseMode.MarkdownV2});
+          items.Add(new InputMediaPhotoSpoiler(new InputMedia(ms, image.Filename)) { Caption = isFirstSent ? Pixiv.Utils.GetWorkUrl(id).Replace(".", "\\.") + "   " + illust.ToString() : null, ParseMode = ParseMode.MarkdownV2});
           isFirstSent = false;
           //image.ImageData.Position = 0;
         }
